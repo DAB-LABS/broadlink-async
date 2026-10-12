@@ -12,10 +12,10 @@ import socket
 
 import pytest
 
-import broadlink
-from broadlink import device as device_module
-from broadlink import exceptions as e
-from broadlink.device import Device
+import broadlink_async
+from broadlink_async import device as device_module
+from broadlink_async import exceptions as e
+from broadlink_async.device import Device
 from tests.oracle.harness import HOST, MAC, make_response
 
 INIT_KEY = bytes.fromhex("097628343fe99e23765c1513accf8b02")
@@ -54,7 +54,7 @@ class FakeTransport:
 
 
 class FakeNet:
-    """Replacement for broadlink.device._open_endpoint."""
+    """Replacement for broadlink_async.device._open_endpoint."""
 
     def __init__(self):
         self.replies: list[tuple[bytes, tuple[str, int]]] = []
@@ -844,10 +844,10 @@ def test_discover_and_hello_build_devices(net):
     net.replies = [
         (hello_response(0x6026, MAC, "Bedroom RM", False), ("192.0.2.10", 80)),
     ]
-    devices = run(broadlink.discover(timeout=0.02))
+    devices = run(broadlink_async.discover(timeout=0.02))
     assert len(devices) == 1
     dev = devices[0]
-    assert isinstance(dev, broadlink.rm4pro)
+    assert isinstance(dev, broadlink_async.rm4pro)
     assert dev.host == ("192.0.2.10", 80)
     assert dev.mac == MAC
     assert dev.name == "Bedroom RM"
@@ -857,7 +857,7 @@ def test_discover_and_hello_build_devices(net):
     net.replies = [
         (hello_response(0x6026, MAC, "Bedroom RM", True), ("192.0.2.10", 80)),
     ]
-    dev = run(broadlink.hello("192.0.2.10", timeout=0.02))
+    dev = run(broadlink_async.hello("192.0.2.10", timeout=0.02))
     assert dev.is_locked is True
     assert net.endpoints[-1].sent[0][1] == ("192.0.2.10", 80)
     assert net.endpoints[-1].closed
@@ -866,11 +866,11 @@ def test_discover_and_hello_build_devices(net):
 def test_hello_times_out(net):
     net.replies = []
     with pytest.raises(e.NetworkTimeoutError):
-        run(broadlink.hello("192.0.2.10", timeout=0.02))
+        run(broadlink_async.hello("192.0.2.10", timeout=0.02))
 
 
 def test_device_hello_validates_identity(net):
-    dev = fixed_device(broadlink.rm4pro, 0x6026)
+    dev = fixed_device(broadlink_async.rm4pro, 0x6026)
     net.replies = [(hello_response(0x6026, MAC, "Renamed", True), HOST)]
     assert run(dev.hello()) is True
     assert dev.name == "Renamed"
@@ -912,11 +912,13 @@ def test_unresolvable_hostname_raises_at_once(net, monkeypatch):
         loop = asyncio.get_running_loop()
         t0 = loop.time()
         with pytest.raises(socket.gaierror):
-            await broadlink.hello("nonexistent.invalid", timeout=5)
+            await broadlink_async.hello("nonexistent.invalid", timeout=5)
         with pytest.raises(socket.gaierror):
-            await broadlink.ping("nonexistent.invalid")
+            await broadlink_async.ping("nonexistent.invalid")
         with pytest.raises(socket.gaierror):
-            await broadlink.setup("ssid", "pass", 3, ip_address="nonexistent.invalid")
+            await broadlink_async.setup(
+                "ssid", "pass", 3, ip_address="nonexistent.invalid"
+            )
         return loop.time() - t0
 
     assert run(go()) < 1.0
@@ -947,9 +949,9 @@ def test_send_failure_on_ping_and_setup_is_raised(net, monkeypatch):
 
         monkeypatch.setattr(device_module, "_open_endpoint", open_and_break)
         with pytest.raises(OSError):
-            await broadlink.ping("192.0.2.1")
+            await broadlink_async.ping("192.0.2.1")
         with pytest.raises(OSError):
-            await broadlink.setup("ssid", "pass", 3, ip_address="192.0.2.255")
+            await broadlink_async.setup("ssid", "pass", 3, ip_address="192.0.2.255")
         return all(ep.closed for ep in ep_holder)
 
     assert run(go())
@@ -961,28 +963,28 @@ def test_send_failure_on_ping_and_setup_is_raised(net, monkeypatch):
 @pytest.mark.parametrize(
     ("devtype", "cls", "model"),
     [
-        (0x2737, broadlink.rmmini, "RM mini 3"),
-        (0x272A, broadlink.rmpro, "RM pro"),
-        (0x5F36, broadlink.rmminib, "RM mini 3"),
-        (0x51DA, broadlink.rm4mini, "RM4 mini"),
-        (0x6026, broadlink.rm4pro, "RM4 pro"),
-        (0x2711, broadlink.sp2s, "SP2"),
-        (0x2720, broadlink.sp2, "SP mini"),
-        (0x2714, broadlink.a1, "A1"),
-        (0x4EAD, broadlink.hysen, "HY02/HY03"),
-        (0x60C7, broadlink.lb1, "LB1"),
-        (0x4EB5, broadlink.mp1, "MP1-1K4S"),
+        (0x2737, broadlink_async.rmmini, "RM mini 3"),
+        (0x272A, broadlink_async.rmpro, "RM pro"),
+        (0x5F36, broadlink_async.rmminib, "RM mini 3"),
+        (0x51DA, broadlink_async.rm4mini, "RM4 mini"),
+        (0x6026, broadlink_async.rm4pro, "RM4 pro"),
+        (0x2711, broadlink_async.sp2s, "SP2"),
+        (0x2720, broadlink_async.sp2, "SP mini"),
+        (0x2714, broadlink_async.a1, "A1"),
+        (0x4EAD, broadlink_async.hysen, "HY02/HY03"),
+        (0x60C7, broadlink_async.lb1, "LB1"),
+        (0x4EB5, broadlink_async.mp1, "MP1-1K4S"),
     ],
 )
 def test_gendevice_known_ids(devtype, cls, model):
-    dev = broadlink.gendevice(devtype, HOST, MAC)
+    dev = broadlink_async.gendevice(devtype, HOST, MAC)
     assert type(dev) is cls
     assert dev.model == model
     assert dev.type == cls.TYPE
 
 
 def test_gendevice_unknown_id_is_generic_device():
-    dev = broadlink.gendevice(0xFFFF, HOST, "a043b05510f7")
+    dev = broadlink_async.gendevice(0xFFFF, HOST, "a043b05510f7")
     assert type(dev) is Device
     assert dev.type == "Unknown"
     assert dev.mac == MAC
@@ -990,7 +992,7 @@ def test_gendevice_unknown_id_is_generic_device():
 
 def test_product_table_has_no_duplicate_ids():
     seen = {}
-    for cls, products in broadlink.SUPPORTED_TYPES.items():
+    for cls, products in broadlink_async.SUPPORTED_TYPES.items():
         for pid in products:
             assert pid not in seen, f"{pid:#06x} in both {seen[pid]} and {cls}"
             seen[pid] = cls.__name__
@@ -1000,7 +1002,7 @@ def test_product_table_has_no_duplicate_ids():
 
 
 def test_setup_packet(net):
-    run(broadlink.setup("MyWifi", "hunter2", 3, ip_address="192.0.2.255"))
+    run(broadlink_async.setup("MyWifi", "hunter2", 3, ip_address="192.0.2.255"))
     packet, addr = net.endpoints[-1].sent[0]
     assert addr == ("192.0.2.255", 80)
     assert net.endpoints[-1].broadcast is True

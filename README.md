@@ -1,18 +1,28 @@
-# python-broadlink
+# broadlink-async
 
 A Python module and CLI for controlling Broadlink devices locally.
 
-> **About this fork.** This repository is a maintained fork of
+> **About this fork.** This library is a maintained fork of
 > [mjg59/python-broadlink](https://github.com/mjg59/python-broadlink), which
 > has not accepted changes since 2024. It exists so that Home Assistant's
 > Broadlink integration has a library that can take fixes and new devices.
-> The distribution on PyPI is `python-broadlink`; the import name stays
-> `broadlink`. The first release corrects the IR timing constant reported in
-> upstream [#839](https://github.com/mjg59/python-broadlink/issues/839)
+> It is published on PyPI as `broadlink-async` and imported as
+> `broadlink_async`. The first release corrects the IR timing constant
+> reported in upstream [#839](https://github.com/mjg59/python-broadlink/issues/839)
 > (fix in [#841](https://github.com/mjg59/python-broadlink/pull/841)) and
 > adds the devices waiting in upstream's pull request queue, including the
 > RM Max and RM5 Plus. Version 1.0 is asynchronous and adds `capture()`;
 > see `CHANGELOG.md`. Upstream's credit and MIT license are preserved.
+
+> **Renamed in 1.1.0.** Releases up to 1.0.6 were published as
+> `python-broadlink` and imported as `broadlink`, the same import name as the
+> original library. Installing one replaced the other's files, which could
+> break Home Assistant's Broadlink integration when a custom integration
+> still required the original.
+> From 1.1.0 the package is `broadlink-async` and the import is
+> `broadlink_async`, so both can be installed side by side. To move over,
+> install `broadlink-async` and change `import broadlink` to
+> `import broadlink_async`; the API is the same.
 
 ## Version 1.0 is asynchronous
 
@@ -26,11 +36,11 @@ parameters typed as floats, and the `mac` in a hello response typed as
 
 ```python
 import asyncio
-import broadlink
+import broadlink_async
 
 
 async def main():
-    devices = await broadlink.discover(timeout=5)
+    devices = await broadlink_async.discover(timeout=5)
     device = devices[0]
     await device.auth()
     print(await device.check_sensors())
@@ -87,19 +97,12 @@ one: the code runs on 3.11, but the versions tested in CI are 3.13 and
 Use pip3 to install the latest version of this module.
 
 ```
-pip3 install python-broadlink
+pip3 install broadlink-async
 ```
 
-Both this distribution and the original `broadlink` install a package named
-`broadlink`, so only one can be present in an environment at a time. Pip
-does not warn about this: installing one on top of the other appears to
-succeed, and whichever was installed last is the one that `import broadlink`
-finds. If both were installed, uninstall both (`pip3 uninstall broadlink
-python-broadlink`) and reinstall this one, since `pip3 uninstall broadlink`
-alone removes the shared files and leaves `python-broadlink` registered but
-unimportable. This matters most where another package pins `broadlink`:
-installing it into the same environment silently replaces this async
-library with the original synchronous one.
+The package installs as `broadlink_async`, so it can sit in the same
+environment as the original `broadlink` package without either one
+affecting the other.
 
 ## Basic functions
 
@@ -109,7 +112,7 @@ interactively, start Python with `python3 -m asyncio`, which gives you a
 prompt where `await` works at the top level.
 
 ```python3
-import broadlink
+import broadlink_async
 ```
 
 Now let's try some functions...
@@ -124,7 +127,7 @@ In order to control the device, you need to connect it to your local network. If
   - Manually connect to the WiFi SSID named BroadlinkProv.
 2. Connect the device to your local network with the setup function.
 ```python3
-await broadlink.setup("myssid", "mynetworkpass", 3)
+await broadlink_async.setup("myssid", "mynetworkpass", 3)
 ```
 
 Security mode options are (0 = none, 1 = WEP, 2 = WPA1, 3 = WPA2, 4 = WPA1/2)
@@ -133,7 +136,7 @@ Security mode options are (0 = none, 1 = WEP, 2 = WPA1, 3 = WPA2, 4 = WPA1/2)
 
 You may need to specify a broadcast address if setup is not working.
 ```python3
-await broadlink.setup("myssid", "mynetworkpass", 3, ip_address="192.168.0.255")
+await broadlink_async.setup("myssid", "mynetworkpass", 3, ip_address="192.168.0.255")
 ```
 
 ### Discovery
@@ -141,7 +144,7 @@ await broadlink.setup("myssid", "mynetworkpass", 3, ip_address="192.168.0.255")
 Use this function to discover devices:
 
 ```python3
-devices = await broadlink.discover()
+devices = await broadlink_async.discover()
 ```
 
 #### Advanced options
@@ -149,17 +152,17 @@ You may need to specify `local_ip_address` or `discover_ip_address` if discovery
 
 Using the IP address of your local machine:
 ```python3
-devices = await broadlink.discover(local_ip_address="192.168.0.100")
+devices = await broadlink_async.discover(local_ip_address="192.168.0.100")
 ```
 
 Using the broadcast address of your subnet:
 ```python3
-devices = await broadlink.discover(discover_ip_address="192.168.0.255")
+devices = await broadlink_async.discover(discover_ip_address="192.168.0.255")
 ```
 
-If the device is locked, it may not be discoverable with broadcast. In such cases, you can use the unicast version `broadlink.hello()` for direct discovery:
+If the device is locked, it may not be discoverable with broadcast. In such cases, you can use the unicast version `broadlink_async.hello()` for direct discovery:
 ```python3
-device = await broadlink.hello("192.168.0.16")
+device = await broadlink_async.hello("192.168.0.16")
 ```
 
 `discover()` and `hello()` raise `NetworkTimeoutError` when nothing answers
@@ -167,9 +170,9 @@ within the timeout, `socket.gaierror` when a hostname does not resolve, and
 `OSError` when the socket cannot be opened or the send fails (no route, for
 example), the same errors the original library raised from its socket.
 
-If you are a perfomance freak, use `broadlink.xdiscover()` to create devices instantly:
+If you are a perfomance freak, use `broadlink_async.xdiscover()` to create devices instantly:
 ```python3
-async for device in broadlink.xdiscover():
+async for device in broadlink_async.xdiscover():
     print(device)  # Example action. Do whatever you want here.
 ```
 

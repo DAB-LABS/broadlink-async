@@ -1,4 +1,4 @@
-"""The python-broadlink library."""
+"""The broadlink-async library."""
 
 import contextlib
 from collections.abc import AsyncGenerator

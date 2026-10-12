@@ -6,9 +6,9 @@ import datetime as dt
 
 import pytest
 
-from broadlink.helpers import CRC16
-from broadlink.protocol import Datetime
-from broadlink.remote import TICK, data_to_pulses, pulses_to_data
+from broadlink_async.helpers import CRC16
+from broadlink_async.protocol import Datetime
+from broadlink_async.remote import TICK, data_to_pulses, pulses_to_data
 
 
 def test_tick_constant():

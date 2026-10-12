@@ -3,10 +3,11 @@
 All notable changes to this project are recorded here. The format follows
 Keep a Changelog; versions follow Semantic Versioning.
 
-## 1.1.0 - 2026-10-07
+## 1.1.0 - 2026-10-12
 
-RF packets as the RM4 Pro really returns them, a way to take a device out
-of learning mode, and capture windows that slide. Tested on an RM4 Pro
+A new name, so this library and the original can be installed together.
+Also RF packets as the RM4 Pro really returns them, a way to take a device
+out of learning mode, and capture windows that slide. Tested on an RM4 Pro
 with a second device listening on 433.92 MHz to what it transmits.
 
 ### Fixed
@@ -40,6 +41,17 @@ with a second device listening on 433.92 MHz to what it transmits.
 
 ### Changed
 
+- The library is renamed. It is published as `broadlink-async` (was
+  `python-broadlink`) and imported as `broadlink_async` (was `broadlink`).
+  The old import name was shared with the original `broadlink` package, so
+  installing either one replaced the other's files without a warning. Home
+  Assistant hit this when a custom integration still required the original
+  (home-assistant/core#184800). The two now install side by side. To move
+  over, install `broadlink-async` and change `import broadlink` to
+  `import broadlink_async`; the API is the same. Logger names follow the
+  module, so they are now `broadlink_async.*`. The repository moved to
+  DAB-LABS/broadlink-async. `python-broadlink` stays on PyPI at 1.0.6 and
+  gets no further releases.
 - A capture window sends `cancel_learning()` when it closes, for any
   reason, so the device stops listening instead of holding the next press
   until its own timeout. The cancel is best-effort, waits at most two

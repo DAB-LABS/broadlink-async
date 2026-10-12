@@ -29,8 +29,8 @@ def test_every_public_method_is_covered() -> None:
     """Fail when a device class grows a public method the oracle does not know."""
     import inspect
 
-    import broadlink
-    from broadlink.device import Device
+    import broadlink_async
+    from broadlink_async.device import Device
 
     covered = {(e["case"]["cls"], e["case"]["method"]) for e in ENTRIES}
     # Methods on Device itself that need a live socket are covered in
@@ -53,7 +53,7 @@ def test_every_public_method_is_covered() -> None:
     # that method's fixtures.
     transport_level |= {"cancel_learning"}
     missing = []
-    for name, cls in inspect.getmembers(broadlink, inspect.isclass):
+    for name, cls in inspect.getmembers(broadlink_async, inspect.isclass):
         if not issubclass(cls, Device):
             continue
         for meth, _ in inspect.getmembers(cls, inspect.isfunction):

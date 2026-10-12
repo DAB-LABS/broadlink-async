@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import struct
 
-from broadlink.helpers import CRC16
+from broadlink_async.helpers import CRC16
 
 
 def hexb(*parts: bytes | bytearray) -> str:

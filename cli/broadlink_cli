@@ -7,9 +7,9 @@ import time
 from contextlib import AsyncExitStack, aclosing
 from typing import List
 
-import broadlink
-from broadlink.const import DEFAULT_PORT
-from broadlink.remote import CapturedSignal, data_to_pulses, pulses_to_data
+import broadlink_async
+from broadlink_async.const import DEFAULT_PORT
+from broadlink_async.remote import CapturedSignal, data_to_pulses, pulses_to_data
 
 TIMEOUT = 30
 
@@ -64,7 +64,7 @@ parser = argparse.ArgumentParser(fromfile_prefix_chars='@')
 parser.add_argument("--device", help="device definition as 'type host mac'")
 parser.add_argument("--type", type=auto_int, default=0x2712, help="type of device")
 parser.add_argument("--host", help="host address")
-parser.add_argument("--mac", help="mac address (hex reverse), as used by python-broadlink library")
+parser.add_argument("--mac", help="mac address (hex reverse), as used by the broadlink-async library")
 parser.add_argument("--temperature", action="store_true", help="request temperature from device")
 parser.add_argument("--humidity", action="store_true", help="request humidity from device")
 parser.add_argument("--energy", action="store_true", help="request energy consumption from device")
@@ -115,12 +115,12 @@ async def run_commands(stack: AsyncExitStack):
         mac = bytearray.fromhex(args.mac)
 
     if args.host or args.device:
-        dev = broadlink.gendevice(devtype, (host, DEFAULT_PORT), mac)
+        dev = broadlink_async.gendevice(devtype, (host, DEFAULT_PORT), mac)
         await stack.enter_async_context(dev)
         await dev.auth()
 
     if args.joinwifi:
-        await broadlink.setup(args.joinwifi[0], args.joinwifi[1], 4)
+        await broadlink_async.setup(args.joinwifi[0], args.joinwifi[1], 4)
 
     if args.convert:
         data = bytearray.fromhex(''.join(args.data))
