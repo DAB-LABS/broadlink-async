@@ -10,7 +10,7 @@ from .const import DEFAULT_BCAST_ADDR, DEFAULT_PORT, DEFAULT_TIMEOUT
 from .cover import dooya, dooya2, wser
 from .device import Device, ping, scan, send_setup_packet
 from .hub import s3
-from .light import lb1, lb2
+from .light import fl, lb1, lb2
 from .remote import rm, rm4, rm4mini, rm4pro, rm5plus, rmmini, rmminib, rmpro
 from .sensor import a1, a2
 from .switch import bg1, ehc31, mp1, mp1s, sp1, sp2, sp2s, sp3, sp3s, sp4, sp4b
@@ -194,6 +194,9 @@ SUPPORTED_TYPES = {
         0xA5F7: ("LB27 R1", "Broadlink"),
         0xA6EF: ("EFCF60WSMT", "Luceco"),
         0xA517: ("LB26 R1", "Broadlink"),
+    },
+    fl: {
+        0x647A: ("Castra", "Luceco"),
     },
     S1C: {
         0x2722: ("S2KIT", "Broadlink"),

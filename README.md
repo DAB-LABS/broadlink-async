@@ -63,7 +63,7 @@ The following devices are supported:
 - **Power strips**: MP1-1K3S2U, MP1-1K4S, MP2
 - **Environment sensors**: A1, A2
 - **Alarm kits**: S1C, S2KIT
-- **Light bulbs**: LB1, LB26 R1, LB27 R1, SB800TD, LEDVANCE SMART+ WIFI CEILING TW 24W
+- **Light bulbs**: LB1, LB26 R1, LB27 R1, SB800TD, LEDVANCE SMART+ WIFI CEILING TW 24W, Luceco Castra Security Floodlight
 - **Curtain motors**: Dooya DT360E-45/20
 - **Thermostats**: Hysen HY02/HY03
 - **Hubs**: S3

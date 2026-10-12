@@ -3,6 +3,12 @@
 All notable changes to this project are recorded here. The format follows
 Keep a Changelog; versions follow Semantic Versioning.
 
+## Unreleased
+
+### Added
+
+- Add support for the Luceco Castra security floodlight
+
 ## 1.1.1 - 2026-10-16
 
 ### Added
