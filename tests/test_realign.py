@@ -14,7 +14,7 @@ import asyncio
 
 import pytest
 
-from broadlink.remote import SignalKind, pulses_to_data, realign_rf_packet
+from broadlink_async.remote import SignalKind, pulses_to_data, realign_rf_packet
 from tests.test_capture import FAST, UNIT, make, press_later, run
 
 MISALIGNED = bytes.fromhex("b1c01600b09e0600350d00019a280c0d280d00019a280c0d280d")

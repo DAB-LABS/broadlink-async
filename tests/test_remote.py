@@ -2,7 +2,7 @@
 
 import unittest
 
-from broadlink.remote import TICK, data_to_pulses, pulses_to_data
+from broadlink_async.remote import TICK, data_to_pulses, pulses_to_data
 
 OLD_TICK = 32.84  # the constant this PR replaces
 

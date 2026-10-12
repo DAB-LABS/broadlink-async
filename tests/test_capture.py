@@ -14,9 +14,9 @@ from contextlib import aclosing
 
 import pytest
 
-import broadlink
-from broadlink import exceptions as e
-from broadlink.remote import (
+import broadlink_async
+from broadlink_async import exceptions as e
+from broadlink_async.remote import (
     TICK,
     CapturedSignal,
     SignalKind,
@@ -50,7 +50,7 @@ CMD_CANCEL_SWEEP = 0x1E  # Also cancel_learning, sent when a window closes.
 class FakeRM:
     """A scripted RM: one receiver, one code per arm, silent expiry."""
 
-    def __init__(self, device: broadlink.Device, framing: str) -> None:
+    def __init__(self, device: broadlink_async.Device, framing: str) -> None:
         self.device = device
         self.framing = framing  # "rmmini" (<I) or "rmminib" (<HI)
         self.commands: list[tuple[int, bytes]] = []
@@ -139,8 +139,8 @@ class FakeRM:
 
 def make(
     cls_name: str = "rm4pro", devtype: int = 0x649B
-) -> tuple[broadlink.Device, FakeRM]:
-    cls = getattr(broadlink, cls_name)
+) -> tuple[broadlink_async.Device, FakeRM]:
+    cls = getattr(broadlink_async, cls_name)
     device = cls(HOST, MAC, devtype, name="Bench", model="Test", manufacturer="Test")
     framing = "rmmini" if cls_name in {"rmmini", "rmpro", "rm"} else "rmminib"
     return device, FakeRM(device, framing)
@@ -646,11 +646,11 @@ def test_capture_rf_refused_while_ir_window_open():
 
 
 def test_rf_capture_is_only_on_pro_classes():
-    assert hasattr(broadlink.rmpro, "capture_rf")
-    assert hasattr(broadlink.rm4pro, "capture_rf")
-    assert not hasattr(broadlink.rm4mini, "capture_rf")
-    assert not hasattr(broadlink.rmmini, "capture_rf")
-    assert not hasattr(broadlink.rm5plus, "capture_rf")
+    assert hasattr(broadlink_async.rmpro, "capture_rf")
+    assert hasattr(broadlink_async.rm4pro, "capture_rf")
+    assert not hasattr(broadlink_async.rm4mini, "capture_rf")
+    assert not hasattr(broadlink_async.rmmini, "capture_rf")
+    assert not hasattr(broadlink_async.rm5plus, "capture_rf")
 
 
 # --------------------------------------------------------- packet helpers

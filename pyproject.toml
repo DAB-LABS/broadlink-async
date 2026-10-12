@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "python-broadlink"
+name = "broadlink-async"
 version = "1.1.0"
 description = "Python API for controlling Broadlink devices"
 readme = "README.md"
@@ -39,14 +39,14 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/DAB-LABS/python-broadlink"
-Repository = "https://github.com/DAB-LABS/python-broadlink"
-Issues = "https://github.com/DAB-LABS/python-broadlink/issues"
-Changelog = "https://github.com/DAB-LABS/python-broadlink/blob/master/CHANGELOG.md"
+Homepage = "https://github.com/DAB-LABS/broadlink-async"
+Repository = "https://github.com/DAB-LABS/broadlink-async"
+Issues = "https://github.com/DAB-LABS/broadlink-async/issues"
+Changelog = "https://github.com/DAB-LABS/broadlink-async/blob/master/CHANGELOG.md"
 Upstream = "https://github.com/mjg59/python-broadlink"
 
 [tool.setuptools]
-packages = ["broadlink"]
+packages = ["broadlink_async"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -70,10 +70,10 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 # The package __init__ re-exports the public API.
-"broadlink/__init__.py" = ["F401"]
+"broadlink_async/__init__.py" = ["F401"]
 # Tests fire helper tasks without keeping a reference on purpose.
 "tests/*" = ["RUF006"]
 # Long example payloads and comments inherited from upstream.
-"broadlink/climate.py" = ["E501"]
-"broadlink/light.py" = ["E501"]
-"broadlink/switch.py" = ["E501"]
+"broadlink_async/climate.py" = ["E501"]
+"broadlink_async/light.py" = ["E501"]
+"broadlink_async/switch.py" = ["E501"]

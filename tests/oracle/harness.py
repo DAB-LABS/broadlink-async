@@ -35,8 +35,8 @@ import inspect
 from dataclasses import dataclass, field
 from typing import Any
 
-import broadlink
-from broadlink.device import Device
+import broadlink_async
+from broadlink_async.device import Device
 
 # A fixed identity so recorded bytes never depend on random state.
 MAC = bytes.fromhex("a043b05510f7")
@@ -104,7 +104,7 @@ def normalize(value: Any) -> Any:
 
 def build_device(cls_name: str, devtype: int) -> Device:
     """Instantiate a device class by name with the fixed test identity."""
-    cls = getattr(broadlink, cls_name)
+    cls = getattr(broadlink_async, cls_name)
     return cls(HOST, MAC, devtype, name="Bench", model="Test", manufacturer="Test")
 
 

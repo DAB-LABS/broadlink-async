@@ -44,7 +44,7 @@ jobs:
         run: |
           python -m venv /tmp/check
           /tmp/check/bin/pip install dist/*.whl
-          /tmp/check/bin/python -c "import broadlink; print(broadlink.__name__)"
+          /tmp/check/bin/python -c "import broadlink_async; print(broadlink_async.__name__)"
       - uses: actions/upload-artifact@v4
         with:
           name: dist

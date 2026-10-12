@@ -2,9 +2,9 @@
 import argparse
 import asyncio
 
-import broadlink
-from broadlink.const import DEFAULT_BCAST_ADDR, DEFAULT_TIMEOUT
-from broadlink.exceptions import StorageError
+import broadlink_async
+from broadlink_async.const import DEFAULT_BCAST_ADDR, DEFAULT_TIMEOUT
+from broadlink_async.exceptions import StorageError
 
 parser = argparse.ArgumentParser(fromfile_prefix_chars='@')
 parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT, help="timeout to wait for receiving discovery responses")
@@ -15,7 +15,7 @@ args = parser.parse_args()
 
 async def main():
     print("Discovering...")
-    devices = await broadlink.discover(timeout=args.timeout, local_ip_address=args.ip, discover_ip_address=args.dst_ip)
+    devices = await broadlink_async.discover(timeout=args.timeout, local_ip_address=args.ip, discover_ip_address=args.dst_ip)
     for device in devices:
         if await device.auth():
             print("###########################################")

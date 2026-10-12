@@ -1,14 +1,14 @@
-Command line interface for python-broadlink
+Command line interface for broadlink-async
 ===========================================
 
-This is a command line interface for the python-broadlink API.
+This is a command line interface for the broadlink-async API.
 
 
 Requirements
 ------------
 You need to install the module first (Python 3.13 or newer):
 ```
-pip install python-broadlink
+pip install broadlink-async
 ```
 
 Installation

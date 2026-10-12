@@ -14,9 +14,9 @@ import sys
 
 import pytest
 
-from broadlink import device as device_module
-from broadlink import exceptions as e
-from broadlink.device import Device
+from broadlink_async import device as device_module
+from broadlink_async import exceptions as e
+from broadlink_async.device import Device
 from tests.oracle.harness import MAC, make_response
 
 
@@ -86,7 +86,7 @@ def test_endpoint_heals_after_a_socket_error_on_loopback(caplog):
     saw it) so the request times out as before, but it must have reached
     the protocol, and the device must reopen its socket for the next call
     instead of reusing the dead one."""
-    caplog.set_level("DEBUG", logger="broadlink.device")
+    caplog.set_level("DEBUG", logger="broadlink_async.device")
 
     async def go():
         dev = Device(("127.0.0.1", unused_udp_port()), MAC, 0x2737, name="Loopback")
