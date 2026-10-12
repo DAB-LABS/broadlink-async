@@ -2855,6 +2855,81 @@
  },
  {
   "case": {
+   "cls": "fl",
+   "devtype": 25722,
+   "method": "get_state",
+   "args": [],
+   "kwargs": {},
+   "responses": [
+    "da00a5a55a5ac401030bce0000007b20226272696768746e657373223a203130302c20226c69676874707772223a20302c202262617474657279223a20302c20227069725f6465746563746564223a20302c20226d616e6465746563746564223a20302c20226c6d737461747573223a20322c20224272696768746e65737320636f6e74726f6c223a20323030302c202244656c61792074696d65223a2031302c202273656e73697469766974795f656e223a20332c20226d6f64655f737769746368223a20302c202269667474745f656e61626c65223a2030207d00000000"
+   ]
+  },
+  "expect": {
+   "result": {
+    "brightness": 100,
+    "lightpwr": 0,
+    "battery": 0,
+    "pir_detected": 0,
+    "mandetected": 0,
+    "lmstatus": 2,
+    "sensitivity_en": 3,
+    "mode_switch": 0,
+    "ifttt_enable": 0,
+    "brightness_control": 2000,
+    "delay_time": 10
+   },
+   "sent": [
+    [
+     106,
+     "0e00a5a55a5ab3c1010b020000007b7d"
+    ]
+   ],
+   "unused_responses": 0
+  }
+ },
+ {
+  "case": {
+   "cls": "fl",
+   "devtype": 25722,
+   "method": "set_state",
+   "args": [],
+   "kwargs": {
+    "mode_switch": 2,
+    "lightpwr": 0,
+    "brightness": 100,
+    "brightness_control": 2000,
+    "delay_time": 10,
+    "sensitivity_en": 3
+   },
+   "responses": [
+    "da00a5a55a5ac401030bce0000007b20226272696768746e657373223a203130302c20226c69676874707772223a20302c202262617474657279223a20302c20227069725f6465746563746564223a20302c20226d616e6465746563746564223a20302c20226c6d737461747573223a20322c20224272696768746e65737320636f6e74726f6c223a20323030302c202244656c61792074696d65223a2031302c202273656e73697469766974795f656e223a20332c20226d6f64655f737769746368223a20302c202269667474745f656e61626c65223a2030207d00000000"
+   ]
+  },
+  "expect": {
+   "result": {
+    "brightness": 100,
+    "lightpwr": 0,
+    "battery": 0,
+    "pir_detected": 0,
+    "mandetected": 0,
+    "lmstatus": 2,
+    "sensitivity_en": 3,
+    "mode_switch": 0,
+    "ifttt_enable": 0,
+    "brightness_control": 2000,
+    "delay_time": 10
+   },
+   "sent": [
+    [
+     106,
+     "7800a5a55a5a6fe5020b6c0000007b226d6f64655f737769746368223a352c226c69676874707772223a302c226272696768746e657373223a3130302c224272696768746e65737320636f6e74726f6c223a323030302c2244656c61792074696d65223a31302c2273656e73697469766974795f656e223a337d"
+    ]
+   ],
+   "unused_responses": 0
+  }
+ },
+ {
+  "case": {
    "cls": "hysen",
    "devtype": 20141,
    "method": "send_request",
