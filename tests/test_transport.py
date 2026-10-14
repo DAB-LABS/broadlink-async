@@ -8,6 +8,7 @@ be exercised with corrupted frames.
 from __future__ import annotations
 
 import asyncio
+import errno
 import socket
 
 import pytest
@@ -466,13 +467,15 @@ def test_send_failure_fails_the_request_fast_and_heals(net):
         bad = net.endpoints[-1]
 
         def failing_sendto(data, addr=None):
-            bad.protocol.error_received(OSError(101, "Network is unreachable"))
+            bad.protocol.error_received(
+                OSError(errno.ENETUNREACH, "Network is unreachable")
+            )
 
         bad.sendto = failing_sendto
         t0 = asyncio.get_running_loop().time()
         with pytest.raises(OSError) as err:
             await dev.send_packet(0x6A, b"")
-        assert err.value.errno == 101
+        assert err.value.errno == errno.ENETUNREACH
         assert asyncio.get_running_loop().time() - t0 < 1.0
         assert bad.closed
         assert dev._transport is None
@@ -488,7 +491,7 @@ def test_send_failure_fails_the_request_fast_and_heals(net):
     [
         ConnectionRefusedError(111, "Connection refused"),
         ConnectionResetError(10054, "Connection reset"),
-        OSError(113, "No route to host"),
+        OSError(errno.EHOSTUNREACH, "No route to host"),
     ],
     ids=["port-unreachable", "windows-reset", "host-unreachable"],
 )
@@ -526,12 +529,14 @@ def test_transport_lost_with_error_wakes_the_request(net):
     async def go():
         task = asyncio.get_running_loop().create_task(dev.send_packet(0x6A, b""))
         await asyncio.sleep(0.005)
-        net.endpoints[-1].protocol.connection_lost(OSError(22, "Invalid argument"))
+        net.endpoints[-1].protocol.connection_lost(
+            OSError(errno.EINVAL, "Invalid argument")
+        )
         with pytest.raises(OSError) as err:
             await task
         return err.value.errno
 
-    assert run(go()) == 22
+    assert run(go()) == errno.EINVAL
 
 
 # ------------------------------------------------------------------------- auth
@@ -941,7 +946,9 @@ def test_send_failure_on_ping_and_setup_is_raised(net, monkeypatch):
             transport, protocol = await original(**kwargs)
 
             def failing_sendto(data, addr=None):
-                protocol.error_received(OSError(101, "Network is unreachable"))
+                protocol.error_received(
+                    OSError(errno.ENETUNREACH, "Network is unreachable")
+                )
 
             transport.sendto = failing_sendto
             ep_holder.append(transport)
