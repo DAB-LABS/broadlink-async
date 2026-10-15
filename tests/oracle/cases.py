@@ -468,7 +468,7 @@ def all_cases() -> list[dict]:
         "sensitivity_en": 2,
         "mode_switch": 0,
         "brightness_control": 100,
-        "delay_time": 80
+        "delay_time": 80,
     }
     add(case("fl", 0x647A, "get_state", responses=[json14_payload(fl_state)]))
     add(
