@@ -37,6 +37,8 @@ SUPPORTED_TYPES = {
         0x7918: ("SP2", "Broadlink (OEM)"),
         0x7919: ("SP2-compatible", "Honeywell"),
         0x791A: ("SP2-compatible", "Honeywell"),
+        0x791B: ("WS2-W10", "Broadlink (OEM)"),
+        0x791C: ("WS2-W16", "Broadlink (OEM)"),
         0x7D0D: ("SP mini 3", "Broadlink (OEM)"),
     },
     sp2s: {

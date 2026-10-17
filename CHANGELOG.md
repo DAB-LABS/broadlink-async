@@ -3,6 +3,13 @@
 All notable changes to this project are recorded here. The format follows
 Keep a Changelog; versions follow Semantic Versioning.
 
+## 1.1.1 - Unreleased
+
+### Added
+
+- The WS2-W10 and WS2-W16 smart plugs (0x791B and 0x791C) are recognized
+  and controlled as SP2 plugs. Reported and tested by 15959626783 (#17).
+
 ## 1.1.0 - 2026-10-12
 
 A new name, so this library and the original can be installed together.
