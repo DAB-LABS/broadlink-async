@@ -76,6 +76,7 @@ Device type mapping:
 |0x2728|SPMini2|SP2
 |0x2733 or 0x273e|OEM branded SPMini|SP2|
 |>= 0x7530 and <= 0x7918|OEM branded SPMini2|SP2|
+|0x791b or 0x791c|OEM branded WS2-W10 or WS2-W16|SP2|
 |0x2736|SPMiniPlus|SP2|
 |0x2712|RM2|RM|
 |0x2737|RM Mini / RM3 Mini Blackbean|RM|
