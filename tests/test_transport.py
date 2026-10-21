@@ -332,10 +332,14 @@ def test_second_answer_to_a_resent_request_is_not_taken_as_next_reply(net):
     assert run(go()) == 2
 
 
-def test_auth_never_lets_a_queued_request_out_with_id_zero(net):
+def test_auth_never_lets_a_queued_request_out_with_id_zero(net, monkeypatch):
     """A request queued behind the lock while auth() runs must be framed
     after the new session is installed, never with the initial key and
     device id 0."""
+    # The fake device answers after 2 ms. Keep the resend interval long so a
+    # slow runner cannot resend a frame before that answer arrives, which
+    # would add a second auth to the exchange this test counts.
+    monkeypatch.setattr(device_module, "DEFAULT_RETRY_INTVL", 1.0)
     dev = fixed_device()
     dev.id = 5
     session_key = bytes.fromhex("00112233445566778899aabbccddeeff")
@@ -684,11 +688,15 @@ def test_locked_device_surfaces_as_the_original_error(net):
     assert types == [0x6A, 0x65, 0x65]
 
 
-def test_request_queued_behind_an_auth_still_reauths_if_needed(net):
+def test_request_queued_behind_an_auth_still_reauths_if_needed(net, monkeypatch):
     """The auth generation is read under the lock, so a request that was
     queued while another caller's auth() ran, and still gets -7, performs
     its own re-authentication instead of assuming the earlier one covers
     it."""
+    # The fake device answers after 2 ms. Keep the resend interval long so a
+    # slow runner cannot resend a frame before that answer arrives, which
+    # would add a second auth to the exchange this test counts.
+    monkeypatch.setattr(device_module, "DEFAULT_RETRY_INTVL", 1.0)
     dev = fixed_device()
     dev.id = 5
     session_key = bytes.fromhex("00112233445566778899aabbccddeeff")
