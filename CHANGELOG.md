@@ -3,6 +3,16 @@
 All notable changes to this project are recorded here. The format follows
 Keep a Changelog; versions follow Semantic Versioning.
 
+## Unreleased
+
+### Changed
+
+- The Hysen `get_full_status`, `set_mode` and `set_advanced` docstrings
+  explain the mode byte. `set_advanced` writes its first argument,
+  `loop_mode`, as the whole byte (loop mode in the high nibble, auto or
+  manual in the low one), and `get_full_status` reports the loop mode as
+  stored, one more than `set_mode` takes. Behaviour is unchanged.
+
 ## 1.1.1 - 2026-10-16
 
 ### Added

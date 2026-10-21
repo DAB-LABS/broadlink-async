@@ -67,6 +67,12 @@ class hysen(Device):
         """Return the state of the device.
 
         Timer schedule included.
+
+        ``loop_mode`` and ``auto_mode`` are the two halves of the mode byte
+        (register 2). ``loop_mode`` is the high nibble as the device stores
+        it, which is one more than the ``loop_mode`` that :meth:`set_mode`
+        takes; ``auto_mode`` is the low nibble. To write the byte back with
+        :meth:`set_advanced`, pass ``(loop_mode << 4) | auto_mode``.
         """
         payload = await self.send_request([0x01, 0x03, 0x00, 0x00, 0x00, 0x16])
         data = {}
@@ -127,7 +133,13 @@ class hysen(Device):
     # loop_mode = 2 ("1234567") means every day, including Saturday and Sunday (weekday schedule)
     # The sensor command is currently experimental
     async def set_mode(self, auto_mode: int, loop_mode: int, sensor: int = 0) -> None:
-        """Set the mode of the device."""
+        """Set the mode of the device.
+
+        ``auto_mode`` is 1 to follow the schedule and 0 for manual.
+        ``loop_mode`` is 0 for "12345,67", 1 for "123456,7" or 2 for
+        "1234567". The device stores ``loop_mode + 1`` in the high nibble of
+        the mode byte, which is what :meth:`get_full_status` reports.
+        """
         mode_byte = ((loop_mode + 1) << 4) + auto_mode
         await self.send_request([0x01, 0x06, 0x00, 0x02, mode_byte, sensor])
 
@@ -154,7 +166,23 @@ class hysen(Device):
         fre: int,
         poweron: int,
     ) -> None:
-        """Set advanced options."""
+        """Set the advanced options in one write.
+
+        The device only takes these settings as one block starting at
+        register 2, so every value is written each time.
+
+        The first argument, ``loop_mode``, is the whole mode byte, not the
+        loop mode that :meth:`set_mode` takes: its high nibble is the loop
+        mode as stored (``set_mode``'s ``loop_mode + 1``) and its low nibble
+        is ``auto_mode``. A plain loop mode of 0 to 2 lands in the low
+        nibble, where the device reads it as the auto/manual setting, and the
+        loop setting is cleared.
+        To change one setting and keep the rest, read
+        :meth:`get_full_status` and pass
+        ``(status["loop_mode"] << 4) | status["auto_mode"]`` here, with the
+        other values from the same status (``adj`` is
+        ``status["room_temp_adj"]``).
+        """
         await self.send_request(
             [
                 0x01,
