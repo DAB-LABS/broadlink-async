@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "broadlink-async"
-version = "1.1.1"
+version = "1.2.0"
 description = "Python API for controlling Broadlink devices"
 readme = "README.md"
 license = "MIT"
