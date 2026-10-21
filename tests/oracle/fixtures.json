@@ -2855,6 +2855,81 @@
  },
  {
   "case": {
+   "cls": "fl",
+   "devtype": 25722,
+   "method": "get_state",
+   "args": [],
+   "kwargs": {},
+   "responses": [
+    "c300a5a55a5a0000010bb70000007b226272696768746e657373223a3130302c226c69676874707772223a302c2273656e73697469766974795f656e223a332c226d6f64655f737769746368223a302c226272696768746e6573735f636f6e74726f6c223a323030302c2264656c61795f74696d65223a31302c2262617474657279223a302c227069725f6465746563746564223a302c226d616e6465746563746564223a302c226c6d737461747573223a322c2269667474745f656e61626c65223a307d"
+   ]
+  },
+  "expect": {
+   "result": {
+    "brightness": 100,
+    "lightpwr": 0,
+    "sensitivity_en": 3,
+    "mode_switch": 0,
+    "brightness_control": 2000,
+    "delay_time": 10,
+    "battery": 0,
+    "pir_detected": 0,
+    "mandetected": 0,
+    "lmstatus": 2,
+    "ifttt_enable": 0
+   },
+   "sent": [
+    [
+     106,
+     "0e00a5a55a5ab3c1010b020000007b7d"
+    ]
+   ],
+   "unused_responses": 0
+  }
+ },
+ {
+  "case": {
+   "cls": "fl",
+   "devtype": 25722,
+   "method": "set_state",
+   "args": [],
+   "kwargs": {
+    "mode_switch": 0,
+    "lightpwr": 0,
+    "brightness": 100,
+    "brightness_control": 2000,
+    "delay_time": 10,
+    "sensitivity_en": 3
+   },
+   "responses": [
+    "c300a5a55a5a0000010bb70000007b226272696768746e657373223a3130302c226c69676874707772223a302c2273656e73697469766974795f656e223a332c226d6f64655f737769746368223a302c226272696768746e6573735f636f6e74726f6c223a323030302c2264656c61795f74696d65223a31302c2262617474657279223a302c227069725f6465746563746564223a302c226d616e6465746563746564223a302c226c6d737461747573223a322c2269667474745f656e61626c65223a307d"
+   ]
+  },
+  "expect": {
+   "result": {
+    "brightness": 100,
+    "lightpwr": 0,
+    "sensitivity_en": 3,
+    "mode_switch": 0,
+    "brightness_control": 2000,
+    "delay_time": 10,
+    "battery": 0,
+    "pir_detected": 0,
+    "mandetected": 0,
+    "lmstatus": 2,
+    "ifttt_enable": 0
+   },
+   "sent": [
+    [
+     106,
+     "7800a5a55a5a6ae5020b6c0000007b226d6f64655f737769746368223a302c226c69676874707772223a302c226272696768746e657373223a3130302c224272696768746e65737320636f6e74726f6c223a323030302c2244656c61792074696d65223a31302c2273656e73697469766974795f656e223a337d"
+    ]
+   ],
+   "unused_responses": 0
+  }
+ },
+ {
+  "case": {
    "cls": "hysen",
    "devtype": 20141,
    "method": "send_request",

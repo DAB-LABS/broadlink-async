@@ -196,3 +196,66 @@ class lb2(Device):
         js_len = struct.unpack_from("<I", payload, 0x08)[0]
         state = json.loads(payload[0x0C : 0x0C + js_len])
         return state
+
+
+class fl(lb1):
+    """Controls a Luceco Castra Floodlight.
+
+    These set_state items control the floodlight
+     "mode_switch": 0 - detect motion; 5 - manual control; 6 - dusk to dawn; 7 - night glow
+     "brightness":  0 - 100 percent
+     "Delay time":  10 - 1800 seconds
+     "lightpwr": in manual mode, 0 - off; 1 - on
+     "Brightness control": 5 - 2000 set external brightness below which light turns on
+     "sensitivity_en": 0 - 3 set how much motion triggers light
+    """
+
+    TYPE = "FL"
+
+    def _fix_state(self, state: dict) -> dict:
+        """change state names that contain spaces"""
+        if "Brightness control" in state:
+            state["brightness_control"] = state["Brightness control"]
+            del state["Brightness control"]
+        if "Delay time" in state:
+            state["delay_time"] = state["Delay time"]
+            del state["Delay time"]
+        return state
+
+    async def get_state(self) -> dict:
+        state = await super().get_state()
+        return self._fix_state(state)
+
+    async def set_state(
+        self,
+        mode_switch: int | None = None,
+        lightpwr: bool | None = None,
+        brightness: int | None = None,
+        brightness_control: int | None = None,
+        delay_time: int | None = None,
+        sensitivity_en: int | None = None,
+    ) -> dict:
+        """Set the mode, light brightness, delay time, light power, external brightness and motion sensitivity of the device.
+        Mode will be forced to manual (5) if lightpwr is specified and mode_switch isn't specified.
+        """
+        state = {}
+        if mode_switch is not None:
+            state["mode_switch"] = int(mode_switch)
+        if lightpwr is not None:
+            state["lightpwr"] = int(bool(lightpwr))
+            # Force mode to manual if mode_switch not specified
+            if mode_switch is None:
+                state["mode_switch"] = 5
+        if brightness is not None:
+            state["brightness"] = int(brightness)
+        if brightness_control is not None:
+            state["Brightness control"] = int(brightness_control)
+        if delay_time is not None:
+            state["Delay time"] = int(delay_time)
+        if sensitivity_en is not None:
+            state["sensitivity_en"] = int(sensitivity_en)
+
+        packet = self._encode(2, state)
+        response = await self.send_packet(0x6A, packet)
+        e.check_error(response[0x22:0x24])
+        return self._fix_state(self._decode(response))

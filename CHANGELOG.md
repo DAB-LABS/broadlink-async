@@ -5,6 +5,10 @@ Keep a Changelog; versions follow Semantic Versioning.
 
 ## Unreleased
 
+### Added
+
+- Add support for the Luceco Castra security floodlight
+
 ### Changed
 
 - The Hysen `get_full_status`, `set_mode` and `set_advanced` docstrings

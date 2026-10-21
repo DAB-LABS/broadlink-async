@@ -462,6 +462,34 @@ def all_cases() -> list[dict]:
             responses=[json12_payload(lb_state)],
         )
     )
+    fl_state = {
+        "brightness": 100,
+        "lightpwr": 0,
+        "sensitivity_en": 3,
+        "mode_switch": 0,
+        "brightness_control": 2000,
+        "delay_time": 10,
+        "battery": 0,
+        "pir_detected": 0,
+        "mandetected": 0,
+        "lmstatus": 2,
+        "ifttt_enable": 0,
+    }
+    add(case("fl", 0x647A, "get_state", responses=[json14_payload(fl_state)]))
+    add(
+        case(
+            "fl",
+            0x647A,
+            "set_state",
+            mode_switch=0,
+            lightpwr=0,
+            brightness=100,
+            brightness_control=2000,
+            delay_time=10,
+            sensitivity_en=3,
+            responses=[json14_payload(fl_state)],
+        )
+    )
 
     # Climate -----------------------------------------------------------
     status = hysen_payload(hysen_status_body())
