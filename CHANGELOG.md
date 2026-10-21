@@ -3,11 +3,14 @@
 All notable changes to this project are recorded here. The format follows
 Keep a Changelog; versions follow Semantic Versioning.
 
-## Unreleased
+## 1.2.0 - 2026-10-20
 
 ### Added
 
-- Add support for the Luceco Castra security floodlight
+- The Luceco Castra security floodlight (0x647A) is supported as `fl`:
+  mode, light power, brightness, ambient brightness threshold, delay time
+  and motion sensitivity, with matching CLI options. Contributed by
+  simonmunton (#16).
 
 ### Changed
 
