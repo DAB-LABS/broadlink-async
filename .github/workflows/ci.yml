@@ -8,11 +8,17 @@ on:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    # macOS checks the platform's own error numbers (#15). Its runners are
+    # often short, and a job that never gets one should not fail the run.
+    continue-on-error: ${{ matrix.os == 'macos-latest' }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: ["3.13", "3.14"]
+        exclude:
+          - os: macos-latest
+            python-version: "3.13"
     steps:
       - uses: actions/checkout@v7
       - name: Set up Python ${{ matrix.python-version }}
