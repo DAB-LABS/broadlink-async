@@ -3,6 +3,18 @@
 All notable changes to this project are recorded here. The format follows
 Keep a Changelog; versions follow Semantic Versioning.
 
+## 1.2.1 - 2026-11-04
+
+### Fixed
+
+- An IR code built by `pulses_to_data` that ends on a pulse now ends with
+  the same 101.5 ms off time as a learned code (`0x00 0x0d 0x05`). Without
+  one, an RM4 Pro held the last pulse for up to about 5 ms too long, so
+  Philips TVs ignored RC-6 codes from Home Assistant's infrared platform,
+  and a code sent with `repeat` ran into its next copy
+  (home-assistant/core#190257). Codes that already end on an off time, RF
+  codes and learned codes are sent as before.
+
 ## 1.2.0 - 2026-10-20
 
 ### Added

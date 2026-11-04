@@ -672,7 +672,7 @@ def test_pulses_to_data_rejects_bad_repeat():
 
 
 def test_parse_packet_round_trip():
-    pulses = [9000, 4500, 560, 1690, 40000]
+    pulses = [9000, 4500, 560, 1690, 560, 40000]
     for kind in SignalKind:
         packet = pulses_to_data(pulses, kind=kind, repeat=1)
         parsed = parse_packet(packet)
