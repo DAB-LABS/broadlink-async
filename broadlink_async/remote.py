@@ -115,6 +115,27 @@ def rf_carrier_mhz(data: bytes) -> float | None:
     return khz / 1000 if khz else None
 
 
+_IR_TRAILING_GAP_TICKS = 0x0D05
+"""Off time, in device ticks, that ends an IR packet whose timings end on a pulse.
+
+About 101.5 ms, the value every IR code learned on a Broadlink ends with
+(protocol.md). When an RM4 Pro is sent an IR code whose last timing is a
+pulse, it holds that pulse for up to about 5 ms too long (0.1 to 5.1 ms
+on a bench with firmware 52079, 2026-11-04). That breaks protocols whose
+last half-bit matters, such as RC-6, and runs a repeated code into its
+next copy (home-assistant/core#190257). RF has not been tested for this.
+"""
+
+
+def _append_ticks(result: bytearray, ticks: int) -> None:
+    """Append one duration, already in device ticks, to a packet."""
+    div, mod = divmod(ticks, 256)
+    if div:
+        result.append(0)
+        result.append(div)
+    result.append(mod)
+
+
 def pulses_to_data(
     pulses: list[int],
     tick: float = TICK,
@@ -127,19 +148,27 @@ def pulses_to_data(
     ``kind`` selects the type byte (IR, RF 433 MHz or RF 315 MHz) and
     ``repeat`` is the number of extra transmissions the device performs
     after the first, 0 to 255 (protocol.md offset 0x01).
+
+    The durations alternate on, off, starting with on. An IR sequence that
+    ends on an on time gets about 101.5 ms of off time after it, as learned
+    codes have, so the device ends the last pulse on time. With ``repeat``,
+    that off time also separates the copies; for an exact repeat period,
+    pass a sequence that ends with your own off time. A sequence that
+    already ends on an off time is encoded as given.
     """
     if not 0 <= repeat <= 0xFF:
         raise ValueError("repeat must be between 0 and 255")
+    pulses = list(pulses)
+    kind = SignalKind(kind)
     result = bytearray(4)
-    result[0x00] = SignalKind(kind)
+    result[0x00] = kind
     result[0x01] = repeat
 
     for pulse in pulses:
-        div, mod = divmod(round(pulse / tick), 256)
-        if div:
-            result.append(0)
-            result.append(div)
-        result.append(mod)
+        _append_ticks(result, round(pulse / tick))
+
+    if kind is SignalKind.IR and len(pulses) % 2:
+        _append_ticks(result, _IR_TRAILING_GAP_TICKS)
 
     data_len = len(result) - 4
     result[0x02] = data_len & 0xFF

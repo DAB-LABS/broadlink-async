@@ -187,7 +187,9 @@ Send the following payload with a command byte of 0x006a
 Each value is represented by one byte. If the length exceeds one byte
 then it is stored big endian with a leading 0.
 
-Captures of IR codes from the device will always end with a constant OFF value of `0x00 0x0d 0x05` but the trailing silence can be anything on transmit. The likely reason for this value is a capped timeout value on detection. The value is about 102 milliseconds.
+Captures of IR codes from the device will always end with a constant OFF value of `0x00 0x0d 0x05`. The likely reason for this value is a capped timeout value on detection. The value is about 102 milliseconds.
+
+On transmit, an IR code needs an OFF value after its last ON value. When an RM4 Pro is sent an IR code that ends on an ON value, it holds that last pulse for up to about 5 ms too long, and a repeated code runs into its next copy. `pulses_to_data` adds `0x00 0x0d 0x05` to IR codes that end on an ON value.
 
 RF codes an RM4 Pro returns from learning use a different layout. Offsets
 below are within the code itself, so add 4 for the payload above:

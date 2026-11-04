@@ -30,9 +30,9 @@ Every call that reaches a device is a coroutine and must be awaited. That
 is the main change from the original library's API: method names and
 arguments are the same, and so are return values, with the small
 exceptions listed in `CHANGELOG.md` (the IR tick constant, `pulses_to_data`
-returning `bytes`, the unused `Device.lock` attribute removed, `timeout`
-parameters typed as floats, and the `mac` in a hello response typed as
-`bytes`).
+returning `bytes` and ending an IR code that ends on a pulse with an off
+time, the unused `Device.lock` attribute removed, `timeout` parameters
+typed as floats, and the `mac` in a hello response typed as `bytes`).
 
 ```python
 import asyncio
