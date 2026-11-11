@@ -11,6 +11,7 @@ from typing import Any
 from .const import RM_MAX_PID
 from .exceptions import ImportDataError
 from .models import (
+    DeviceKind,
     Family,
     ImportedDevice,
     ImportedGroup,
@@ -323,9 +324,18 @@ def _parse_import_payload(body: bytes) -> list[Family]:
                         continue
 
         mark_rm_children(devices)
+        for device in devices:
+            if device.kind is DeviceKind.GATEWAY and not device.mac:
+                device.mac = normalize_mac(device.did)
         bletoken = _string(
             _get(family_info, "bletoken", "bleToken", default=bundle.get("token", ""))
-        )
+        ).strip()
+        try:
+            token = bytes.fromhex(bletoken)
+        except ValueError as err:
+            raise ImportDataError("family bletoken must be hexadecimal") from err
+        if not token:
+            raise ImportDataError("family bletoken is required")
         families.append(
             Family(
                 family_id=family_id,

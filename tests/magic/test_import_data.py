@@ -19,12 +19,19 @@ def _b64(value: object) -> str:
     return base64.b64encode(json.dumps(value).encode()).decode()
 
 
-def _payload_for_devices(devices: list[dict[str, object]]) -> bytes:
+def _payload_for_devices(
+    devices: list[dict[str, object]], family_info: object = None
+) -> bytes:
+    if family_info is None:
+        family_info = {"bletoken": "00010203"}
     return json.dumps(
         [
             {
                 "did": "family-1",
-                "dataList": [{"mtag": "devlist", "data": _b64(devices)}],
+                "dataList": [
+                    {"mtag": "familyInfo", "data": _b64(family_info)},
+                    {"mtag": "devlist", "data": _b64(devices)},
+                ],
             }
         ]
     ).encode()
@@ -142,10 +149,48 @@ def test_invalid_import_field_types_do_not_echo_values(short_addr: object) -> No
     assert "ZZ" not in str(err.value)
 
 
+@pytest.mark.parametrize("bletoken", ["", "  ", "secret-value", "0x0102", "abc"])
+def test_missing_or_invalid_bletoken_is_rejected(bletoken: str) -> None:
+    body = _payload_for_devices([], {"bletoken": bletoken})
+    with pytest.raises(ImportDataError) as err:
+        parse_import_payload(body)
+    assert "secret" not in str(err.value)
+
+
+def test_missing_bletoken_without_family_info_is_rejected() -> None:
+    body = json.dumps(
+        [{"did": "family", "dataList": [{"mtag": "devlist", "data": _b64([])}]}]
+    ).encode()
+    with pytest.raises(ImportDataError):
+        parse_import_payload(body)
+
+
+def test_gateway_mac_falls_back_to_did() -> None:
+    body = _payload_for_devices(
+        [
+            {
+                "did": "00000000000000000000A1B2C3D4E5F6",
+                "pid": "0000000000000000000000008baf0000",
+                "devname": "RM Max",
+            }
+        ]
+    )
+    (gateway,) = parse_import_payload(body)[0].gateways
+    assert gateway.mac == "a1b2c3d4e5f6"
+
+
 @pytest.mark.parametrize("devlist", [[1], ["device"], [{"did": []}], {"devlist": None}])
 def test_unexpected_import_structure_is_skipped_or_rejected(devlist: object) -> None:
     body = json.dumps(
-        [{"did": "family", "dataList": [{"mtag": "devlist", "data": _b64(devlist)}]}]
+        [
+            {
+                "did": "family",
+                "dataList": [
+                    {"mtag": "familyInfo", "data": _b64({"bletoken": "00010203"})},
+                    {"mtag": "devlist", "data": _b64(devlist)},
+                ],
+            }
+        ]
     ).encode()
     try:
         families = parse_import_payload(body)
