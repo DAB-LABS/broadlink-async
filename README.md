@@ -24,6 +24,13 @@ A Python module and CLI for controlling Broadlink devices locally.
 > install `broadlink-async` and change `import broadlink` to
 > `import broadlink_async`; the API is the same.
 
+## BroadLink Magic
+
+The independent `broadlink_async.magic` namespace provides the BroadLink
+Magic Home family models, import parser, RM Max discovery and gateway
+protocols, FastCon framing, and device command/status helpers. Existing
+`broadlink_async` imports and behavior are unchanged.
+
 ## Version 1.0 is asynchronous
 
 Every call that reaches a device is a coroutine and must be awaited. That

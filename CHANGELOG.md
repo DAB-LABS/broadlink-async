@@ -3,6 +3,23 @@
 All notable changes to this project are recorded here. The format follows
 Keep a Changelog; versions follow Semantic Versioning.
 
+## Unreleased
+
+### Added
+
+- The `broadlink_async.magic` namespace provides the BroadLink Magic Home
+  family models, import parser, RM Max discovery and gateway protocols,
+  FastCon framing, and device command/status helpers.
+- Three-in-one thermostat panels (PID `bbaf`) report their AC, floor
+  heating and fresh air state, and `encode_floor_heating_attribute` and
+  `encode_fresh_air_attribute` control the floor heating and fresh air loads.
+  Capability frames from these panels are ignored instead of being read as
+  AC state.
+- Curtain uploads report their position (byte 1, 0..100) as `position` and
+  byte 0 as `motion` (`opening`, `closing` or `stopped`). Uploads with byte 1
+  `0xff`, sent by motors without travel limits, only echo the last command and
+  are ignored.
+
 ## 1.2.1 - 2026-11-04
 
 ### Fixed

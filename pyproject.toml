@@ -34,6 +34,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8",
+    "pytest-asyncio>=0.25",
     "ruff>=0.5",
     "build",
 ]
@@ -45,12 +46,13 @@ Issues = "https://github.com/DAB-LABS/broadlink-async/issues"
 Changelog = "https://github.com/DAB-LABS/broadlink-async/blob/master/CHANGELOG.md"
 Upstream = "https://github.com/mjg59/python-broadlink"
 
-[tool.setuptools]
-packages = ["broadlink_async"]
+[tool.setuptools.packages.find]
+include = ["broadlink_async*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+asyncio_mode = "auto"
 
 [tool.ruff]
 line-length = 90
@@ -71,6 +73,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # The package __init__ re-exports the public API.
 "broadlink_async/__init__.py" = ["F401"]
+"broadlink_async/magic/__init__.py" = ["F401"]
 # Tests fire helper tasks without keeping a reference on purpose.
 "tests/*" = ["RUF006"]
 # Long example payloads and comments inherited from upstream.
