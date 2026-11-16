@@ -342,6 +342,30 @@ carrier it never really locked, so the known-frequency path is preferred.
 await device.send_data(packet)
 ```
 
+#### Building an RF packet for an RM4 Pro
+
+An RM4 Pro sends an RF packet of type 0xB1 on the carrier written inside
+it. `pulses_to_rm4_rf` builds one from a frame of signed microsecond
+timings (positive is carrier on, negative is carrier off, starting with a
+pulse), written out `frames` times:
+
+```python3
+from broadlink_async.remote import pulses_to_rm4_rf
+
+packet = pulses_to_rm4_rf(timings, 433.92, frames=4, gap_us=12881, tail_us=45680)
+await device.send_data(packet)
+```
+
+A frame that ends on an off time keeps it as the gap between frames; one
+that ends on a pulse needs `gap_us`. The packet always ends on an off
+time, `tail_us` when given. On the bench a plug's code sent as one frame
+did nothing and as 4 or 10 frames worked, so send more than one. Built
+packets were tested up to about 530 bytes, the size of a learned packet;
+the device's own limit is not known. The builder does not check the
+carrier against any band. Only the RM4 Pro has been
+tested with this layout; `pulses_to_data` with `kind=SignalKind.RF_433`
+builds the older layout, which has no carrier field.
+
 ### Fetching sensor data
 ```python3
 data = await device.check_sensors()

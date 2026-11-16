@@ -207,6 +207,21 @@ code with 315000 there is not transmitted at 433.92MHz. A code built with
 0xb2 and no carrier field, as described above, is also accepted and sent at
 433.92MHz. Tested on an RM4 Pro, firmware 52079.
 
+Built codes in this layout are sent too. On the same RM4 Pro, a plug's On
+and Off frames written out 4 or 10 times, with a 12.9ms off time between
+frames and 45.7ms at the end, switched the plug at 433920, 433000 and
+434790kHz; the On frame written once did nothing. With 315000 in the
+carrier field the plug, a 433.92MHz receiver, did not respond, which shows
+the device uses the field. With 0 it sent nothing. A CC1101 receiver
+nearby saw the carrier move with the field. Built codes were tested up to
+about 530 bytes, the size of a learned code; the device's limit is not
+known.
+`pulses_to_rm4_rf` builds this layout.
+
+A duration that rounds to 0 is not written as a lone 0x00, which would
+start the long form above; the library writes 1 instead. The long form
+holds at most 0xffff, about 2 seconds.
+
 Leaving learning mode
 ---------------------
 

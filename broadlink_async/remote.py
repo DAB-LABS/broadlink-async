@@ -3,10 +3,12 @@
 import asyncio
 import contextlib
 import enum
+import itertools
 import logging
+import math
 import struct
 import time
-from collections.abc import AsyncGenerator, Awaitable, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Self
 
@@ -127,8 +129,25 @@ next copy (home-assistant/core#190257). RF has not been tested for this.
 """
 
 
+_MAX_TICKS = 0xFFFF
+"""The longest duration a packet can hold, in device ticks (about 2 s)."""
+
+
 def _append_ticks(result: bytearray, ticks: int) -> None:
-    """Append one duration, already in device ticks, to a packet."""
+    """Append one duration, already in device ticks, to a packet.
+
+    A duration that rounded to 0 ticks is written as 1 tick: a lone 0x00
+    byte is the start of the three-byte long form, so writing it would make
+    the device misread every timing after it. A duration longer than
+    ``_MAX_TICKS`` has no encoding and raises ``ValueError``.
+    """
+    if ticks > _MAX_TICKS:
+        raise ValueError(
+            f"A duration of {ticks} ticks is too long for a Broadlink packet,"
+            f" which holds at most {_MAX_TICKS} ticks (about 2 s) per duration"
+        )
+    if ticks == 0:
+        ticks = 1
     div, mod = divmod(ticks, 256)
     if div:
         result.append(0)
@@ -174,6 +193,99 @@ def pulses_to_data(
     result[0x02] = data_len & 0xFF
     result[0x03] = data_len >> 8
 
+    return bytes(result)
+
+
+_RM4_RF_BYTE1 = 0xC0
+"""Byte 1 of an 0xB1 packet, as every capture has it (see ``RM4_RF_TYPE``)."""
+
+
+def pulses_to_rm4_rf(
+    timings: Sequence[int],
+    carrier_mhz: float,
+    *,
+    frames: int = 1,
+    gap_us: int | None = None,
+    tail_us: int | None = None,
+    tick: float = TICK,
+) -> bytes:
+    """Build an RM4 Pro RF packet (type 0xB1) that sends on ``carrier_mhz``.
+
+    This is the layout an RM4 Pro returns when it learns an RF code, and
+    the device transmits it on the carrier the packet carries (protocol.md).
+    The packet is ``frames`` copies of one frame, written out in full,
+    because byte 1 of an 0xB1 packet is not a repeat count.
+
+    ``timings`` is one frame in signed microseconds, starting with a pulse:
+    positive is carrier on and negative is carrier off, as rf-protocols'
+    ``get_raw_timings()`` gives them. The signs must alternate.
+
+    Between frames, a frame that ends on an off time keeps it as the gap; a
+    frame that ends on a pulse needs ``gap_us`` (unless it is sent once
+    with ``tail_us``). When given, ``gap_us`` replaces a trailing off time
+    rather than adding to it. The packet always ends on an off time: the
+    gap, or ``tail_us`` when given (every learned packet ends on about
+    45,680 us).
+
+    The carrier is written in kHz and is not checked against any band.
+    There is no size limit beyond the packet's length field. The device's
+    own limit is not known: built packets were tested on an RM4 Pro up to
+    about 530 bytes, the size of a learned packet.
+
+    Raises ``ValueError`` for timings that do not start with a pulse or do
+    not alternate, ``frames`` below 1, a carrier that does not fit the field,
+    a gap or tail that is not positive, or a packet too long for its length
+    field.
+    """
+    frame = list(timings)
+    if not all(math.isfinite(t) for t in frame):
+        raise ValueError("RF timings must be finite numbers")
+    if not frame or frame[0] <= 0:
+        raise ValueError("RF timings must start with a pulse (a positive value)")
+    for before, after in itertools.pairwise(frame):
+        if (before > 0) == (after > 0) or after == 0:
+            raise ValueError(
+                "RF timings must alternate between pulses (positive) and off"
+                " times (negative)"
+            )
+    if not isinstance(frames, int) or frames < 1:
+        raise ValueError("frames must be a whole number, at least 1")
+    for name, value in (("gap_us", gap_us), ("tail_us", tail_us)):
+        if value is not None and not (value > 0 and math.isfinite(value)):
+            raise ValueError(f"{name} must be positive")
+    if not math.isfinite(carrier_mhz):
+        raise ValueError("carrier_mhz must be a finite number")
+    carrier_khz = round(carrier_mhz * 1000)
+    if not 0 < carrier_khz <= 0xFFFFFFFF:
+        raise ValueError(f"A carrier of {carrier_mhz} MHz does not fit an 0xB1 packet")
+
+    gap = gap_us
+    if frame[-1] < 0:
+        off = -frame.pop()
+        if gap is None:
+            gap = off
+    tail = tail_us if tail_us is not None else gap
+    if tail is None or (gap is None and frames > 1):
+        raise ValueError("A frame that ends on a pulse needs gap_us")
+
+    encoded = bytearray()
+    for duration in frame:
+        _append_ticks(encoded, round(abs(duration) / tick))
+    between = bytearray(encoded)
+    if frames > 1:
+        _append_ticks(between, round(gap / tick))
+    last = bytearray(encoded)
+    _append_ticks(last, round(tail / tick))
+
+    size = _RM4_RF_HEADER_LEN + (frames - 1) * len(between) + len(last)
+    if size - 4 > 0xFFFF:
+        raise ValueError(
+            f"The RF packet would be {size} bytes, too long for its length field"
+        )
+    result = bytearray([RM4_RF_TYPE, _RM4_RF_BYTE1])
+    result += (size - 4).to_bytes(2, "little")
+    result += carrier_khz.to_bytes(4, "little")
+    result += bytes(between) * (frames - 1) + last
     return bytes(result)
 
 
