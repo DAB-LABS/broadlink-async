@@ -3,6 +3,19 @@
 All notable changes to this project are recorded here. The format follows
 Keep a Changelog; versions follow Semantic Versioning.
 
+## 1.3.0 - 2026-11-16
+
+### Added
+
+- `pulses_to_rm4_rf` builds an RM4 Pro RF packet with its frequency in it,
+  so the device sends on the frequency asked for.
+
+### Fixed
+
+- A duration under half a tick no longer breaks the rest of a packet. It is
+  written as one tick.
+- A duration over about 2 seconds raises a clear `ValueError`.
+
 ## 1.2.1 - 2026-11-04
 
 ### Fixed
