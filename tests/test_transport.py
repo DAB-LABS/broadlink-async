@@ -988,6 +988,7 @@ def test_send_failure_on_ping_and_setup_is_raised(net, monkeypatch):
         (0x791B, broadlink_async.sp2, "WS2-W10"),
         (0x791C, broadlink_async.sp2, "WS2-W16"),
         (0x2714, broadlink_async.a1, "A1"),
+        (0x4EC2, broadlink_async.lifaair, "LM05"),
         (0x4EAD, broadlink_async.hysen, "HY02/HY03"),
         (0x60C7, broadlink_async.lb1, "LB1"),
         (0x4EB5, broadlink_async.mp1, "MP1-1K4S"),

@@ -2696,6 +2696,112 @@
  },
  {
   "case": {
+   "cls": "lifaair",
+   "devtype": 20162,
+   "method": "get_state",
+   "args": [],
+   "kwargs": {},
+   "responses": [
+    "00000000000000000000000000000000000000000000000000000008011602be0300000900010000000100000000000000000000000000a52bc0"
+   ]
+  },
+  "expect": {
+   "result": {
+    "temperature": 26.4,
+    "humidity": 22,
+    "co2": 958,
+    "formaldehyde": 0.0,
+    "tvoc": 90,
+    "pm1": 1,
+    "pm2_5": 0,
+    "pm10": 1,
+    "fan_mode": 1,
+    "fan_speed": 43,
+    "purifier_online": true
+   },
+   "sent": [
+    [
+     106,
+     "1800a5a55a5abbc002000c000000000000000000000000000000"
+    ]
+   ],
+   "unused_responses": 0
+  }
+ },
+ {
+  "case": {
+   "cls": "lifaair",
+   "devtype": 20162,
+   "method": "set_fan_mode",
+   "args": [
+    3
+   ],
+   "kwargs": {},
+   "responses": [
+    "0000000000000000000000000000000000000000000000000000000b0116028b03000009000100000001000000000000000000000000008d79c0"
+   ]
+  },
+  "expect": {
+   "result": {
+    "temperature": 26.7,
+    "humidity": 22,
+    "co2": 907,
+    "formaldehyde": 0.0,
+    "tvoc": 90,
+    "pm1": 1,
+    "pm2_5": 0,
+    "pm10": 1,
+    "fan_mode": 3,
+    "fan_speed": 121,
+    "purifier_online": true
+   },
+   "sent": [
+    [
+     106,
+     "1800a5a55a5ac3c001000c000000020700000000000000000000"
+    ]
+   ],
+   "unused_responses": 0
+  }
+ },
+ {
+  "case": {
+   "cls": "lifaair",
+   "devtype": 20162,
+   "method": "set_fan_speed",
+   "args": [
+    50
+   ],
+   "kwargs": {},
+   "responses": [
+    "0000000000000000000000000000000000000000000000000000000b011602890300000a000200000002000000000000000000000000008532c0"
+   ]
+  },
+  "expect": {
+   "result": {
+    "temperature": 26.7,
+    "humidity": 22,
+    "co2": 905,
+    "formaldehyde": 0.0,
+    "tvoc": 100,
+    "pm1": 2,
+    "pm2_5": 0,
+    "pm10": 2,
+    "fan_mode": 5,
+    "fan_speed": 50,
+    "purifier_online": true
+   },
+   "sent": [
+    [
+     106,
+     "1800a5a55a5aedc001000c000000013200000000000000000000"
+    ]
+   ],
+   "unused_responses": 0
+  }
+ },
+ {
+  "case": {
    "cls": "lb1",
    "devtype": 24775,
    "method": "get_state",
@@ -4166,6 +4272,31 @@
     [
      106,
      "01000000000000000000000000000000"
+    ]
+   ],
+   "unused_responses": 0
+  }
+ },
+ {
+  "case": {
+   "cls": "lifaair",
+   "devtype": 20162,
+   "method": "set_fan_mode",
+   "args": [
+    3
+   ],
+   "kwargs": {},
+   "responses": [
+    "00000000000000000000000000000000"
+   ],
+   "error_code": 65531
+  },
+  "expect": {
+   "error": "StorageError: [Errno -5] The device storage is full",
+   "sent": [
+    [
+     106,
+     "1800a5a55a5ac3c001000c000000020700000000000000000000"
     ]
    ],
    "unused_responses": 0
