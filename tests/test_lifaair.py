@@ -10,6 +10,7 @@ import asyncio
 import pytest
 
 from broadlink_async import device as device_module
+from broadlink_async import exceptions as e
 from broadlink_async.purifier import lifaair
 from tests.oracle.harness import HOST, MAC, make_response
 
@@ -190,6 +191,27 @@ def test_set_fan_mode_without_a_command_raises():
             run(dev.set_fan_mode(mode))
 
 
+def test_short_state_payload_raises_data_validation_error():
+    dev = device()
+    with pytest.raises(e.DataValidationError) as err:
+        dev._decode_state(bytes(57))
+    assert err.value.errno == -4007
+    assert "at least 58 bytes" in err.value.args[2]
+
+
+def test_set_fan_mode_storage_error_has_lm05_message(monkeypatch):
+    dev = device()
+
+    async def reject_mode(*args):
+        raise e.StorageError(-5, "The device storage is full")
+
+    monkeypatch.setattr(dev, "_send", reject_mode)
+    with pytest.raises(e.StorageError) as err:
+        run(dev.set_fan_mode(lifaair.FanMode.NIGHT))
+    assert err.value.errno == -5
+    assert err.value.strerror == "Fan mode is not allowed in the current device state"
+
+
 def test_set_fan_speed_rejects_out_of_range():
     """Speeds outside 0..121 are rejected."""
     dev = device()
@@ -198,8 +220,9 @@ def test_set_fan_speed_rejects_out_of_range():
             run(dev.set_fan_speed(speed))
 
 
-def test_each_request_opens_a_new_endpoint(monkeypatch):
+def test_each_request_opens_a_new_endpoint(monkeypatch, caplog):
     """Two requests leave on two source ports, and each port is closed."""
+    caplog.set_level("DEBUG", logger="broadlink_async.device")
     opened = []
 
     class _Port:
@@ -234,6 +257,9 @@ def test_each_request_opens_a_new_endpoint(monkeypatch):
     run(go())
     assert [port.port for port in opened] == [10000, 10001]
     assert all(port.closed for port in opened)
+    assert caplog.text.count(
+        "endpoint dropped after a planned per-request reset"
+    ) == 2
 
 
 def test_bit0_clear_decodes_as_the_same_mode():

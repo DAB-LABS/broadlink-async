@@ -81,9 +81,17 @@ class lifaair(Device):
         action_arg = self._FAN_MODE_TO_ACTION_ARG.get(fan_mode)
         if action_arg is None:
             raise ValueError(f"{fan_mode!r} has no mode command")
-        data = await self._send(
-            self._Operation.SET_STATE, self._Action.SET_FAN_MODE, action_arg
-        )
+        try:
+            data = await self._send(
+                self._Operation.SET_STATE, self._Action.SET_FAN_MODE, action_arg
+            )
+        except e.StorageError as err:
+            if err.errno != -5:
+                raise
+            raise e.StorageError(
+                err.errno,
+                "Fan mode is not allowed in the current device state",
+            ) from None
         return self._decode_state(data)
 
     async def set_fan_speed(self, fan_speed: int) -> dict:
@@ -173,6 +181,12 @@ class lifaair(Device):
         # CO2 reads exactly 400 for up to ~10 s after the station starts (5/5)
         # and was also seen once when the main unit dropped out. 400 ppm can
         # be real, so it is kept.
+        if len(data) < 58:
+            raise e.DataValidationError(
+                -4007,
+                "Received data packet length error",
+                f"Expected at least 58 bytes and received {len(data)}",
+            )
         return {
             "temperature": data[27] + 256 * data[28],
             "humidity": data[29],

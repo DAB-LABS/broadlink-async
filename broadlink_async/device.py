@@ -478,8 +478,8 @@ class Device:
         if protocol is not None:
             protocol.queue.put_nowait(_CLOSED)  # type: ignore[arg-type]
 
-    def _drop_endpoint(self) -> None:
-        """Throw the endpoint away after a failure; the next call reopens it.
+    def _drop_endpoint(self, reason: str = "after a failure") -> None:
+        """Throw the endpoint away; the next call reopens it.
 
         A connected datagram socket can go bad for good (the interface
         bounced, the host's address changed), and the original library
@@ -492,7 +492,7 @@ class Device:
         self._endpoint_addr = None
         if transport is not None:
             transport.close()
-            _LOGGER.debug("%s: endpoint dropped after a failure", self.host[0])
+            _LOGGER.debug("%s: endpoint dropped %s", self.host[0], reason)
 
     async def _endpoint(self) -> tuple[asyncio.DatagramTransport, _Protocol]:
         if self._transport is not None and self._endpoint_addr != self.host:
@@ -635,7 +635,7 @@ class Device:
                     ) from None
         finally:
             if self._fresh_endpoint_per_request:
-                self._drop_endpoint()
+                self._drop_endpoint("after a planned per-request reset")
 
     async def send_packet(self, packet_type: int, payload: bytes | bytearray) -> bytes:
         """Send a packet to the device and return the raw response frame.
