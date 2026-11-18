@@ -263,6 +263,9 @@ class Device:
 
     TYPE = "Unknown"
 
+    # Close the UDP endpoint after every request so the next one binds a new port.
+    _fresh_endpoint_per_request = False
+
     __INIT_KEY = "097628343fe99e23765c1513accf8b02"
     __INIT_VECT = "562e17996d093d28ddb3ba695a2e6f58"
 
@@ -562,71 +565,77 @@ class Device:
         device has not used recently is accepted, for firmware that may not
         echo it.
         """
-        transport, protocol = await self._endpoint()
-        protocol.drain()
-        loop = asyncio.get_running_loop()
-        start = loop.time()
-        timeout = self.timeout
-        count = int.from_bytes(packet[0x28:0x2A], "little")
-        self._recent.append(count)
-        sends = 0
+        try:
+            transport, protocol = await self._endpoint()
+            protocol.drain()
+            loop = asyncio.get_running_loop()
+            start = loop.time()
+            timeout = self.timeout
+            count = int.from_bytes(packet[0x28:0x2A], "little")
+            self._recent.append(count)
+            sends = 0
 
-        while True:
-            transport.sendto(packet)
-            sends += 1
-            if sends > 1:
-                _LOGGER.debug("%s: no reply, resending (%d)", self.host[0], sends)
-            resend_at = loop.time() + DEFAULT_RETRY_INTVL
             while True:
-                now = loop.time()
-                if now - start >= timeout:
-                    break
-                wait = min(resend_at, start + timeout) - now
-                try:
-                    resp, _ = await asyncio.wait_for(protocol.queue.get(), max(wait, 0))
-                except TimeoutError:
-                    if loop.time() - start >= timeout:
+                transport.sendto(packet)
+                sends += 1
+                if sends > 1:
+                    _LOGGER.debug("%s: no reply, resending (%d)", self.host[0], sends)
+                resend_at = loop.time() + DEFAULT_RETRY_INTVL
+                while True:
+                    now = loop.time()
+                    if now - start >= timeout:
                         break
-                    if loop.time() >= resend_at:
-                        break  # Resend.
-                    continue
-                if resp is None:
-                    raise e.EndpointClosedError(
-                        -4013, "Endpoint closed", "The device endpoint was closed"
-                    )
-                if _is_silence(resp):
-                    # ICMP unreachable of one kind or another: the host is up
-                    # with nothing listening, the device is off or rebooting,
-                    # or a router answered for it. The original library's
-                    # unconnected socket never saw these, so keep waiting and
-                    # let the timeout decide, as it did.
+                    wait = min(resend_at, start + timeout) - now
+                    try:
+                        resp, _ = await asyncio.wait_for(
+                            protocol.queue.get(), max(wait, 0)
+                        )
+                    except TimeoutError:
+                        if loop.time() - start >= timeout:
+                            break
+                        if loop.time() >= resend_at:
+                            break  # Resend.
+                        continue
+                    if resp is None:
+                        raise e.EndpointClosedError(
+                            -4013, "Endpoint closed", "The device endpoint was closed"
+                        )
+                    if _is_silence(resp):
+                        # ICMP unreachable of one kind or another: the host is up
+                        # with nothing listening, the device is off or rebooting,
+                        # or a router answered for it. The original library's
+                        # unconnected socket never saw these, so keep waiting and
+                        # let the timeout decide, as it did.
+                        _LOGGER.debug(
+                            "%s: unreachable (%s), still waiting", self.host[0], resp
+                        )
+                        continue
+                    if isinstance(resp, Exception):
+                        # A send failure (no route, address gone) or a fatal
+                        # transport error: fail now and throw the socket away.
+                        _LOGGER.debug("%s: socket error: %s", self.host[0], resp)
+                        self._drop_endpoint()
+                        raise resp
+                    resp = self._validate(resp)
+                    reply_count = int.from_bytes(resp[0x28:0x2A], "little")
+                    if reply_count == count or reply_count not in self._recent:
+                        return resp
                     _LOGGER.debug(
-                        "%s: unreachable (%s), still waiting", self.host[0], resp
+                        "%s: dropped a reply for an earlier request (counter 0x%04x)",
+                        self.host[0],
+                        reply_count,
                     )
-                    continue
-                if isinstance(resp, Exception):
-                    # A send failure (no route, address gone) or a fatal
-                    # transport error: fail now and throw the socket away.
-                    _LOGGER.debug("%s: socket error: %s", self.host[0], resp)
+                if loop.time() - start >= timeout:
+                    _LOGGER.debug("%s: no reply within %ss", self.host[0], timeout)
                     self._drop_endpoint()
-                    raise resp
-                resp = self._validate(resp)
-                reply_count = int.from_bytes(resp[0x28:0x2A], "little")
-                if reply_count == count or reply_count not in self._recent:
-                    return resp
-                _LOGGER.debug(
-                    "%s: dropped a reply for an earlier request (counter 0x%04x)",
-                    self.host[0],
-                    reply_count,
-                )
-            if loop.time() - start >= timeout:
-                _LOGGER.debug("%s: no reply within %ss", self.host[0], timeout)
+                    raise e.NetworkTimeoutError(
+                        -4000,
+                        "Network timeout",
+                        f"No response received within {timeout}s",
+                    ) from None
+        finally:
+            if self._fresh_endpoint_per_request:
                 self._drop_endpoint()
-                raise e.NetworkTimeoutError(
-                    -4000,
-                    "Network timeout",
-                    f"No response received within {timeout}s",
-                ) from None
 
     async def send_packet(self, packet_type: int, payload: bytes | bytearray) -> bytes:
         """Send a packet to the device and return the raw response frame.

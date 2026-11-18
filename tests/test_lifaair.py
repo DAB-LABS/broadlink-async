@@ -9,8 +9,9 @@ import asyncio
 
 import pytest
 
+from broadlink_async import device as device_module
 from broadlink_async.purifier import lifaair
-from tests.oracle.harness import HOST, MAC
+from tests.oracle.harness import HOST, MAC, make_response
 
 
 def payload(raw_hex: str) -> bytes:
@@ -195,6 +196,44 @@ def test_set_fan_speed_rejects_out_of_range():
     for speed in (-1, 122):
         with pytest.raises(ValueError):
             run(dev.set_fan_speed(speed))
+
+
+def test_each_request_opens_a_new_endpoint(monkeypatch):
+    """Two requests leave on two source ports, and each port is closed."""
+    opened = []
+
+    class _Port:
+        def __init__(self, protocol, port):
+            self.protocol = protocol
+            self.port = port
+            self.closed = False
+
+        def sendto(self, data, addr=None):
+            self.protocol.queue.put_nowait((make_response(dev, b""), HOST))
+
+        def is_closing(self):
+            return self.closed
+
+        def close(self):
+            self.closed = True
+
+    async def open_endpoint(local_addr=None, remote_addr=None, broadcast=False):
+        protocol = device_module._Protocol()
+        transport = _Port(protocol, 10000 + len(opened))
+        protocol.connection_made(transport)
+        opened.append(transport)
+        return transport, protocol
+
+    monkeypatch.setattr(device_module, "_open_endpoint", open_endpoint)
+    dev = device()
+
+    async def go():
+        await dev.send_packet(0x6A, b"")
+        await dev.send_packet(0x6A, b"")
+
+    run(go())
+    assert [port.port for port in opened] == [10000, 10001]
+    assert all(port.closed for port in opened)
 
 
 def test_bit0_clear_decodes_as_the_same_mode():

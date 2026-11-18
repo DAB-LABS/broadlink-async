@@ -16,6 +16,10 @@ class lifaair(Device):
 
     TYPE = "LIFAAIR"
 
+    # The LM05 stops answering a source port after 10 received packets.
+    # A new port works without a new login.
+    _fresh_endpoint_per_request = True
+
     @enum.unique
     class FanMode(enum.IntEnum):
         """Enumerates fan modes."""

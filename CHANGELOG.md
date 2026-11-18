@@ -10,7 +10,8 @@ Keep a Changelog; versions follow Semantic Versioning.
 - The LIFAair LM05 air purifier (0x4EC2) is supported as `lifaair`:
   station readings (CO2, TVOC, formaldehyde, PM1, PM2.5, PM10), the
   purifier's temperature and humidity, and fan mode and speed, with
-  matching CLI options. Contributed by pit3k.
+  matching CLI options. Each request uses a new UDP source port.
+  Contributed by pit3k.
 
 ## 1.3.0 - 2026-11-16
 
