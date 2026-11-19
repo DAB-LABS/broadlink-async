@@ -56,7 +56,7 @@ behaviour, pin the original distribution (`broadlink==0.19.0`) instead.
 
 The following devices are supported:
 
-- **Universal remotes**: RM home, RM mini 3, RM plus, RM pro, RM pro+, RM4 mini, RM4 pro, RM4C mini, RM4S, RM4 TV mate, RM Max, RM5 plus
+- **Universal remotes**: RM home, RM mini 3, RM plus, RM pro, RM pro+, RM4 mini, RM4 pro, RM4C mini, RM4C pro, RM4S, RM4 TV mate, RM Max, RM5 plus
 - **Smart plugs**: SP mini, SP mini 3, SP mini+, SP1, SP2, SP2-BR, SP2-CL, SP2-IN, SP2-UK, SP3, SP3-EU, SP3S-EU, SP3S-US, SP4L-AU, SP4L-EU, SP4L-UK, SP4M, SP4M-US, SP mini 3-AL, WS2-W10, WS2-W16, Ankuoo NEO, Ankuoo NEO PRO, Efergy Ego, BG AHC/U-01
 - **Switches**: MCB1, SC1, SCB1E, SCB2
 - **Outlets**: BG 800, BG 900
@@ -197,8 +197,10 @@ bounded by `device.timeout`.
 ### Closing
 
 Each device keeps one UDP socket open for its lifetime (the original
-library opened a new one for every call). Close it when you are done with
-the device, either with the context manager or explicitly:
+library opened a new one for every call). The LIFAair LM05 is the
+exception: it stops answering a source port after 10 packets, so it opens
+a new socket for every request and closes it afterwards. Close a device
+when you are done with it, either with the context manager or explicitly:
 
 ```python3
 async with device:
@@ -438,11 +440,37 @@ from broadlink_async import lifaair
 data = await device.get_state()
 ```
 
+The LM05 is an air-quality station paired with a purifier. CO2, TVOC,
+formaldehyde and PM come from the station; temperature, humidity, fan
+mode and fan speed come from the purifier, and are `None` while it is
+offline (`purifier_online` is `False`):
+
+```python3
+{
+    "temperature": 24.5,  # deg C
+    "humidity": 41,  # %
+    "co2": 425,  # ppm
+    "formaldehyde": 0.03,  # mg/m3
+    "tvoc": 150,  # ug/m3
+    "pm1": 5,  # ug/m3
+    "pm2_5": 7,  # ug/m3
+    "pm10": 9,  # ug/m3
+    "fan_mode": lifaair.FanMode.AUTO,
+    "fan_speed": 50,  # 0 to 121
+    "purifier_online": True,
+}
+```
+
 ### Controlling purifier fan
 ```python3
 await device.set_fan_mode(lifaair.FanMode.TURBO)
 await device.set_fan_speed(50)
 ```
+
+Both return the new state. There is no manual mode command: setting a
+speed puts the purifier in manual. While the purifier is off, only OFF and
+AUTO are accepted, and other modes raise `StorageError` with the message
+"Fan mode is not allowed in the current device state".
 
 ## Hubs
 

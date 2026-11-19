@@ -89,6 +89,7 @@ Device type mapping:
 |0x278f|RM Mini Shate|RM|
 |0x2714|A1|A1|
 |0x4EB5|MP1|MP1|
+|0x4EC2|LIFAair LM05|lifaair|
 
 
 Command packet format
@@ -236,6 +237,55 @@ Example: The header for my Optoma projector is 8920 4450
 
 So the data starts with `0x00 0x1 0x24 0x92 ....`
 
+
+LIFAair LM05
+------------
+
+The LM05 (device type 0x4EC2) is an air-quality station paired with a
+purifier. These layouts were checked on firmware 10026.
+
+Commands use command code 0x6a. The payload is 26 bytes:
+
+|Offset|Contents|
+|------|--------|
+|0x00-0x01|Length of the rest of the payload, 24, little-endian|
+|0x02-0x05|a5 a5 5a 5a|
+|0x06-0x07|Checksum, little-endian: the sum of all 26 bytes from 0xbeaf, taken while the length and checksum bytes are still 0|
+|0x08|1 to set, 2 to get the state|
+|0x0a|0x0c|
+|0x0e|Action when setting: 1 fan speed, 2 fan mode|
+|0x0f|The action's argument|
+
+Fan mode arguments: 1 off, 2 auto, 6 night, 7 turbo, 11 anti-allergy. A
+fan speed is 0 to 121. The reply's error code is at 0x22; the device
+returns -5 when a mode is not allowed in its current state, for example
+night, turbo or anti-allergy while it is off, and for any mode while the
+purifier is offline.
+
+The decrypted reply holds the state at these offsets:
+
+|Offset|Contents|
+|------|--------|
+|27-28|Temperature in tenths of a degree C, little-endian|
+|29|Humidity in %|
+|30|Always 0x02, meaning unknown|
+|31-32|CO2 in ppm|
+|33-34|Formaldehyde in hundredths of a mg/m3|
+|35-36|TVOC in tens of ug/m3|
+|37-38|PM1 in ug/m3|
+|39-40|PM2.5 in ug/m3|
+|41-42|PM10 in ug/m3|
+|55|Fan state: bit 7 set while the purifier is online. 0x81 off, 0xa5 auto, 0x95 night, 0x8d turbo, 0x85 manual|
+|56|Fan speed, 0 to 121|
+|57|Fan flags: bit 0x40 clear with fan state 0x85 means anti-allergy|
+
+Two-byte values are little-endian. Temperature and humidity read 00 00 00
+while the purifier is offline and on the first poll after it reconnects.
+
+The LM05 stops answering a source address and port after 10 packets,
+counting the login, resends and packets it ignores. A new source port
+works without a new login, so the library uses a new socket for every
+request to this device.
 
 Todo
 ----
