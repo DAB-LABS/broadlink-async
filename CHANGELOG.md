@@ -12,6 +12,8 @@ Keep a Changelog; versions follow Semantic Versioning.
   purifier's temperature and humidity, and fan mode and speed, with
   matching CLI options. Each request uses a new UDP source port.
   Contributed by pit3k.
+- 0x521A (Bestcon RM4C PRO) is recognized as an RM4C pro, like 0x5218
+  (home-assistant/core#190900).
 
 ## 1.3.0 - 2026-11-16
 
