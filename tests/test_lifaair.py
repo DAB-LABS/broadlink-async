@@ -257,9 +257,7 @@ def test_each_request_opens_a_new_endpoint(monkeypatch, caplog):
     run(go())
     assert [port.port for port in opened] == [10000, 10001]
     assert all(port.closed for port in opened)
-    assert caplog.text.count(
-        "endpoint dropped after a planned per-request reset"
-    ) == 2
+    assert caplog.text.count("endpoint dropped after a planned per-request reset") == 2
 
 
 def test_bit0_clear_decodes_as_the_same_mode():

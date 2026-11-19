@@ -4292,7 +4292,7 @@
    "error_code": 65531
   },
   "expect": {
-   "error": "StorageError: [Errno -5] The device storage is full",
+   "error": "StorageError: [Errno -5] Fan mode is not allowed in the current device state",
    "sent": [
     [
      106,
