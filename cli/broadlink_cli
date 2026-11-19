@@ -73,6 +73,9 @@ parser.add_argument("--ontime", action="store", help="set floodlight on time (10
 parser.add_argument("--sensitivity", action="store", help="set motion sensitivity (0 - 3)")
 parser.add_argument("--brightnesscontrol", action="store", help="set ambient light threshold (5 - 2000)")
 parser.add_argument("--getstate", action="store_true", help="get current state")
+parser.add_argument("--fanmode", choices=("OFF", "AUTO", "NIGHT", "TURBO", "ANTI_ALLERGY"),
+                    help="set fan mode")
+parser.add_argument("--fanspeed", type=int, help="set fan speed (0 - 121)")
 parser.add_argument("--temperature", action="store_true", help="request temperature from device")
 parser.add_argument("--humidity", action="store_true", help="request humidity from device")
 parser.add_argument("--energy", action="store_true", help="request energy consumption from device")
@@ -146,6 +149,11 @@ async def run_commands(stack: AsyncExitStack):
         await dev.set_state(brightness_control=args.brightnesscontrol)
     if args.getstate:
         print(await dev.get_state())
+    if args.fanmode:
+        fan_mode = broadlink_async.lifaair.FanMode[args.fanmode]
+        print(await dev.set_fan_mode(fan_mode))
+    if args.fanspeed is not None:
+        print(await dev.set_fan_speed(args.fanspeed))
 
     if args.convert:
         data = bytearray.fromhex(''.join(args.data))

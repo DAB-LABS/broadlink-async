@@ -67,6 +67,7 @@ The following devices are supported:
 - **Curtain motors**: Dooya DT360E-45/20
 - **Thermostats**: Hysen HY02/HY03
 - **Hubs**: S3
+- **Air purifiers**: LIFAair LM05
 
 ## Timing
 
@@ -426,6 +427,21 @@ await devices[0].set_state(bulb_colormode=1)
 ### Fetching sensor data
 ```python3
 data = await device.check_sensors()
+```
+
+## Air purifiers
+
+### Fetching purifier state
+```python3
+from broadlink_async import lifaair
+
+data = await device.get_state()
+```
+
+### Controlling purifier fan
+```python3
+await device.set_fan_mode(lifaair.FanMode.TURBO)
+await device.set_fan_speed(50)
 ```
 
 ## Hubs

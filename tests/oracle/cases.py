@@ -83,6 +83,33 @@ def a1_payload(temp=(23, 5), hum=(45, 2), light=2, air=1, noise=0) -> str:
     return p.hex()
 
 
+def lifaair_state_data(
+    *,
+    temperature: int,
+    co2: int,
+    tvoc: int,
+    pm1: int,
+    pm10: int,
+    fan_state: int,
+    fan_speed: int,
+) -> bytes:
+    """58-byte LM05 state body. The decoder reads offsets 27..57."""
+    body = bytearray(58)
+    body[27:29] = temperature.to_bytes(2, "little")  # tenths deg C
+    body[29] = 22  # humidity
+    body[30] = 0x02  # set as captured; meaning unknown
+    body[31:33] = co2.to_bytes(2, "little")  # ppm
+    body[33:35] = (0).to_bytes(2, "little")  # formaldehyde
+    body[35:37] = tvoc.to_bytes(2, "little")  # tvoc
+    body[37:39] = pm1.to_bytes(2, "little")  # pm1
+    body[39:41] = (0).to_bytes(2, "little")  # pm2_5
+    body[41:43] = pm10.to_bytes(2, "little")  # pm10
+    body[55] = fan_state  # fan state
+    body[56] = fan_speed  # fan speed
+    body[57] = 0xC0  # fan flags
+    return bytes(body)
+
+
 def a2_payload() -> str:
     p = bytearray(0x18)
     p[0x0D:0x0F] = (12).to_bytes(2, "big")  # pm10
@@ -418,6 +445,68 @@ def all_cases() -> list[dict]:
     add(case("a1", 0x2714, "check_sensors_raw", responses=[a1_payload()]))
     add(case("a2", 0x4F60, "check_sensors_raw", responses=[a2_payload()]))
 
+    # Purifiers ---------------------------------------------------------
+    # Firmware 10026 captures (pit3k/python-broadlink#1).
+    # 26.4 C, 22 %, CO2 958, fan state 0xA5, speed 43.
+    add(
+        case(
+            "lifaair",
+            0x4EC2,
+            "get_state",
+            responses=[
+                lifaair_state_data(
+                    temperature=264,
+                    co2=958,
+                    tvoc=9,
+                    pm1=1,
+                    pm10=1,
+                    fan_state=0xA5,
+                    fan_speed=43,
+                ).hex()
+            ],
+        )
+    )
+    # TURBO: fan state 0x8D, speed 121.
+    add(
+        case(
+            "lifaair",
+            0x4EC2,
+            "set_fan_mode",
+            3,  # lifaair.FanMode.TURBO
+            responses=[
+                lifaair_state_data(
+                    temperature=267,
+                    co2=907,
+                    tvoc=9,
+                    pm1=1,
+                    pm10=1,
+                    fan_state=0x8D,
+                    fan_speed=121,
+                ).hex()
+            ],
+        )
+    )
+    # Speed 50: fan state 0x85, speed 50.
+    add(
+        case(
+            "lifaair",
+            0x4EC2,
+            "set_fan_speed",
+            50,
+            responses=[
+                lifaair_state_data(
+                    temperature=267,
+                    co2=905,
+                    tvoc=10,
+                    pm1=2,
+                    pm10=2,
+                    fan_state=0x85,
+                    fan_speed=50,
+                ).hex()
+            ],
+        )
+    )
+
     # Lights ------------------------------------------------------------
     lb_state = {
         "red": 128,
@@ -677,5 +766,14 @@ def error_cases() -> list[dict]:
             "kwargs": {},
             "responses": [EMPTY],
             "error_code": 0xFFF9,
+        },
+        {
+            "cls": "lifaair",
+            "devtype": 0x4EC2,
+            "method": "set_fan_mode",
+            "args": [3],  # lifaair.FanMode.TURBO; the device answers -5
+            "kwargs": {},
+            "responses": [EMPTY],
+            "error_code": 0xFFFB,  # -5, StorageError
         },
     ]
