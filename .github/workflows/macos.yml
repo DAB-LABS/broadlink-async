@@ -2,10 +2,8 @@ name: macOS
 
 # macOS checks the platform's own error numbers (#15). Its runners are often
 # short, and a job that never gets one turns the whole run red, so this runs
-# after a merge and once a week rather than on every pull request.
+# once a week and on demand, not on pull requests or merges.
 on:
-  push:
-    branches: [master]
   schedule:
     - cron: "17 6 * * 1"
   workflow_dispatch:
