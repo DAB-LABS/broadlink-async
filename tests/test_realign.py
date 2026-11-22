@@ -43,7 +43,13 @@ ALIGNED = bytes.fromhex("b1c01500b09e06000d00019a280c0d280d00019a280c0d280d")
             id="truncated_extended_timing",
         ),
         pytest.param(b"\x26" + MISALIGNED[1:], b"\x26" + MISALIGNED[1:], id="ir"),
-        pytest.param(b"\xb2" + MISALIGNED[1:], b"\xb2" + MISALIGNED[1:], id="0xb2"),
+        # An RM4 Pro capture on another carrier has another first byte (0x78
+        # at 315 MHz) and is realigned the same way.
+        pytest.param(b"\x78" + MISALIGNED[1:], b"\x78" + ALIGNED[1:], id="0x78"),
+        # A packet with a 4-byte header: byte 1 is a repeat count.
+        pytest.param(
+            b"\xb2\x03" + MISALIGNED[2:], b"\xb2\x03" + MISALIGNED[2:], id="0xb2"
+        ),
         pytest.param(b"\xb1\xc0", b"\xb1\xc0", id="header_only"),
     ],
 )
