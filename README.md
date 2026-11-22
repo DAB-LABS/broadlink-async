@@ -320,11 +320,14 @@ the generator.
 `send_data`), the decoded `pulses` in microseconds at the corrected tick, the
 `kind` (`SignalKind.IR`, `RF_433` or `RF_315`), the `repeat` byte, and for
 RF the carrier in `frequency_mhz`. An RM4 Pro records the carrier inside its
-RF packets (type 0xB1) and transmits on it when the packet is sent back, so
+RF packets and transmits on it when the packet is sent back, so
 `frequency_mhz` reports that value when it is there and the frequency the
-window was given or swept to otherwise. In an 0xB1 packet the `repeat` byte
-is not a repeat count: leave it as the device returned it. `parse_packet()`
-and `rf_carrier_mhz()` read the same field from a stored packet.
+window was given or swept to otherwise. The first byte of those packets
+changes with the carrier (0xB1 at 433.92 MHz, 0x78 at 315), so the library
+recognizes them by the rest of their header; `is_rm4_rf_packet()` says
+whether a packet is one. In those packets the `repeat` byte is not a repeat
+count: leave it as the device returned it. `parse_packet()` and
+`rf_carrier_mhz()` read the same field from a stored packet.
 
 RF works the same way on the Pro models, with the carrier as the one extra
 input:

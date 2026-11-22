@@ -54,8 +54,9 @@ class SignalKind(enum.IntEnum):
     The values are the canonical type bytes the library writes when it
     builds a packet (protocol.md offset 0x00). Packets a device returns
     from a learn session do not always use exactly these bytes -- an RM4
-    Pro returns 0xB1 for a 433 MHz capture, not 0xB2 -- so read a returned
-    packet's kind with ``classify`` rather than by equality.
+    Pro's first byte follows the carrier it captured on (0xB1 at 433.92
+    MHz, 0x78 at 315 MHz) -- so read a returned packet's kind with
+    ``packet_kind`` rather than by equality.
     """
 
     IR = 0x26
@@ -75,6 +76,10 @@ class SignalKind(enum.IntEnum):
         (315 MHz) ranges whose low bits are not documented and vary by
         firmware, so classify by range rather than by exact value. Raises
         ``ValueError`` for a byte in no known range.
+
+        This reads the first byte alone. For a whole packet use
+        ``packet_kind``, which also recognizes an RM4 Pro RF capture by its
+        header, whatever its first byte.
         """
         if type_byte == cls.IR:
             return cls.IR
@@ -86,35 +91,97 @@ class SignalKind(enum.IntEnum):
 
 
 RM4_RF_TYPE = 0xB1
-"""Type byte an RM4 Pro returns for a 433 MHz RF capture."""
+"""Type byte an RM4 Pro returns for an RF capture at 433.92 MHz.
+
+The library writes it when it builds an RM4 Pro RF packet. Captures on
+other carriers have other first bytes (see ``is_rm4_rf_packet``).
+"""
 
 _RM4_RF_HEADER_LEN = 8
 """Type, byte 1, payload length (LE) and the carrier in kHz (LE, 4 bytes).
 
-An 0xB1 packet carries the carrier it was learned on at offsets 4 to 7
-(433920 or 433840 in every capture seen so far), so its timings start at
-offset 8, not 4. The device reads that field on send: the same packet with
-315000 there is not transmitted at 433.92 MHz (bench, 2026-10-06). Byte 1
-is not a repeat count either: it reads 0xC0 in every capture, and the
-device transmits nothing if it is changed to 0.
+An RM4 Pro RF capture carries the carrier it was learned on at offsets 4
+to 7, so its timings start at offset 8, not 4. The device reads that field
+on send: the same packet with 315000 there is not transmitted at 433.92
+MHz (bench, 2026-10-06). Byte 1 is not a repeat count either: it reads
+0xC0 in every capture, and the device transmits nothing if it is changed
+to 0.
+
+The first byte is not fixed. It follows the carrier: 0x64 at 305 MHz,
+0x78 at 315, 0x82 at 320, 0xA0 at 335, 0xB0 at 433.42, 0xB1 at 433.92 and
+0xBA at 438 (bench, 2026-11-21). So a capture is recognized by the rest of
+its header, not by its first byte.
 """
+
+_RM4_RF_BYTE1 = 0xC0
+"""Byte 1 of an RM4 Pro RF packet, as every capture has it."""
+
+_RM4_RF_CARRIER_KHZ = (300_000, 950_000)
+"""Carriers, in kHz, that mark bytes 4 to 7 as an RM4 Pro carrier field."""
+
+_RF_315_BELOW_MHZ = 400
+"""An RF carrier below this is in the 315 MHz band, at or above it 433."""
+
+
+def is_rm4_rf_packet(data: bytes) -> bool:
+    """True if ``data`` has the header of an RM4 Pro RF packet.
+
+    An 0xB1 packet always has it. Any other packet has it when byte 1 is
+    0xC0, its length field covers at least the carrier field, and bytes 4
+    to 7 hold a carrier between 300 and 950 MHz: an RM4 Pro writes a
+    different first byte for each carrier, so that byte alone can't say.
+    IR codes (0x26) never have it, and neither do the 0xB2, 0xB4 and 0xD7
+    packets with a 4-byte header, whose byte 1 is a repeat count.
+    """
+    if len(data) < _RM4_RF_HEADER_LEN:
+        return False
+    if data[0x00] == RM4_RF_TYPE:
+        return True
+    if data[0x00] == SignalKind.IR or data[0x01] != _RM4_RF_BYTE1:
+        return False
+    if int.from_bytes(data[0x02:0x04], "little") < 4:
+        return False
+    khz = int.from_bytes(data[0x04:0x08], "little")
+    return _RM4_RF_CARRIER_KHZ[0] <= khz <= _RM4_RF_CARRIER_KHZ[1]
 
 
 def _timings_offset(data: bytes) -> int:
-    """Offset of the first timing: 8 for an RM4 Pro RF capture, else 4."""
-    return _RM4_RF_HEADER_LEN if data[0x00] == RM4_RF_TYPE else 4
+    """Offset of the first timing: 8 for an RM4 Pro RF packet, else 4.
+
+    An 0xB1 packet too short to hold its carrier field still gets 8, so it
+    reads as malformed rather than as timings.
+    """
+    if data[0x00] == RM4_RF_TYPE or is_rm4_rf_packet(data):
+        return _RM4_RF_HEADER_LEN
+    return 4
 
 
 def rf_carrier_mhz(data: bytes) -> float | None:
-    """The carrier an RM4 Pro RF capture (0xB1) was learned on, in MHz.
+    """The carrier an RM4 Pro RF packet records, in MHz.
 
     Returns None for any other packet, including the 0xB2 and 0xD7 packets
-    ``pulses_to_data`` builds, which have no carrier field.
+    ``pulses_to_data`` builds, which have no carrier field, and for an 0xB1
+    packet whose carrier field is 0.
     """
-    if len(data) < _RM4_RF_HEADER_LEN or data[0x00] != RM4_RF_TYPE:
+    if not is_rm4_rf_packet(data):
         return None
     khz = int.from_bytes(data[0x04:0x08], "little")
     return khz / 1000 if khz else None
+
+
+def packet_kind(data: bytes) -> SignalKind:
+    """Return the kind of signal a whole packet carries.
+
+    An RM4 Pro RF packet is RF, in the band of the carrier it records,
+    whatever its first byte. Any other packet is classified by its first
+    byte (see ``SignalKind.classify``), which raises ``ValueError`` for a
+    byte in no known range.
+    """
+    if len(data) < 4:
+        raise ValueError("Malformed data.")
+    if (mhz := rf_carrier_mhz(data)) is not None:
+        return SignalKind.RF_315 if mhz < _RF_315_BELOW_MHZ else SignalKind.RF_433
+    return SignalKind.classify(data[0x00])
 
 
 _IR_TRAILING_GAP_TICKS = 0x0D05
@@ -194,10 +261,6 @@ def pulses_to_data(
     result[0x03] = data_len >> 8
 
     return bytes(result)
-
-
-_RM4_RF_BYTE1 = 0xC0
-"""Byte 1 of an 0xB1 packet, as every capture has it (see ``RM4_RF_TYPE``)."""
 
 
 def pulses_to_rm4_rf(
@@ -292,8 +355,9 @@ def pulses_to_rm4_rf(
 def data_to_pulses(data: bytes, tick: float = TICK) -> list[int]:
     """Parse a Broadlink packet into a microsecond duration sequence.
 
-    The timings of an RM4 Pro RF capture (type 0xB1) start after its
-    carrier field, at offset 8; every other packet's start at offset 4.
+    The timings of an RM4 Pro RF packet (see ``is_rm4_rf_packet``) start
+    after its carrier field, at offset 8; every other packet's start at
+    offset 4.
     """
     if len(data) < 4:
         raise ValueError("Malformed data.")
@@ -323,12 +387,12 @@ def data_to_pulses(data: bytes, tick: float = TICK) -> list[int]:
 class ParsedPacket:
     """The parts of a Broadlink packet: kind, repeat count and timings.
 
-    ``type_byte`` is the packet's raw first byte; ``kind`` is that byte
-    classified into a band (see ``SignalKind.classify``), which for a
-    device-returned RF packet is not always the canonical value.
-    ``frequency_mhz`` is the carrier an RM4 Pro RF capture (0xB1) records,
-    and None for every other packet. ``repeat`` is byte 1 as read; in an
-    0xB1 packet it is not a repeat count (see ``RM4_RF_TYPE``).
+    ``type_byte`` is the packet's raw first byte; ``kind`` is the band the
+    packet is in (see ``packet_kind``), which for a device-returned RF
+    packet is not always the canonical value. ``frequency_mhz`` is the
+    carrier an RM4 Pro RF packet records, and None for every other packet.
+    ``repeat`` is byte 1 as read; in an RM4 Pro RF packet it is not a repeat
+    count (see ``_RM4_RF_HEADER_LEN``).
     """
 
     kind: SignalKind
@@ -341,12 +405,11 @@ class ParsedPacket:
 def parse_packet(data: bytes, tick: float = TICK) -> ParsedPacket:
     """Split a Broadlink packet into its kind, repeat count and timings.
 
-    Raises ``ValueError`` if the packet is shorter than its header or the
-    type byte is in no known band (IR, 433 MHz or 315 MHz).
+    Raises ``ValueError`` if the packet is shorter than its header, or it
+    is not an RM4 Pro RF packet and its type byte is in no known band (IR,
+    433 MHz or 315 MHz).
     """
-    if len(data) < 4:
-        raise ValueError("Malformed data.")
-    kind = SignalKind.classify(data[0x00])
+    kind = packet_kind(data)
     return ParsedPacket(
         kind,
         data[0x01],
@@ -363,7 +426,7 @@ _LONG_GAP_TICKS = 100
 def realign_rf_packet(packet: bytes) -> bytes:
     """Undo an RM4 Pro RF capture that started in the middle of a pulse.
 
-    The timings of an 0xB1 packet alternate carrier on and carrier off,
+    The timings of an RM4 Pro RF packet alternate carrier on and carrier off,
     starting with on. The RM4 Pro sometimes starts recording mid-pulse,
     which shifts every timing by one slot: replayed as is, the device
     transmits during the gaps between repeated frames and stays silent
@@ -373,9 +436,10 @@ def realign_rf_packet(packet: bytes) -> bytes:
     (odd) slots. If there are at least two timings of ``_LONG_GAP_TICKS``
     or more and all of them sit on carrier-on (even) slots, the first
     timing is dropped and the length field adjusted. Any other packet,
-    including every type other than 0xB1, is returned unchanged.
+    including every packet that is not an RM4 Pro RF packet (see
+    ``is_rm4_rf_packet``), is returned unchanged.
     """
-    if len(packet) <= _RM4_RF_HEADER_LEN or packet[0x00] != RM4_RF_TYPE:
+    if len(packet) <= _RM4_RF_HEADER_LEN or not is_rm4_rf_packet(packet):
         return packet
 
     end = min(4 + int.from_bytes(packet[0x02:0x04], "little"), len(packet))
@@ -414,10 +478,10 @@ class CapturedSignal:
     ``type_byte`` is the packet's raw first byte, which for RF is not always
     the canonical value for the band. ``frequency_mhz`` is set for RF
     captures only: the carrier the packet records when it has one (an RM4
-    Pro's 0xB1 captures do, and that is the carrier the device transmits on
+    Pro's RF captures do, and that is the carrier the device transmits on
     when the packet is sent back), otherwise the carrier the window was
-    given or swept to. ``repeat`` is the packet's byte 1; in an 0xB1 packet
-    that is not a repeat count, so leave it as the device returned it.
+    given or swept to. ``repeat`` is the packet's byte 1; in an RM4 Pro RF
+    packet that is not a repeat count, so leave it as the device returned it.
     """
 
     packet: bytes
@@ -438,18 +502,19 @@ class CapturedSignal:
     ) -> Self:
         """Build a signal from a device-returned packet.
 
-        ``kind`` overrides the band read from the packet's type byte. A
-        capture window knows what it armed, so it passes the kind it armed
-        for and a signal is never dropped over an unexpected type byte; the
-        raw byte is still kept in ``type_byte``. The timings are read from
-        the packet regardless of the type byte. A carrier recorded in the
-        packet takes precedence over ``frequency_mhz``.
+        ``kind`` overrides the band read from the packet (see
+        ``packet_kind``). A capture window knows what it armed, so it passes
+        the kind it armed for and a signal is never dropped over an
+        unexpected type byte; the raw byte is still kept in ``type_byte``.
+        The timings are read from the packet regardless of the type byte. A
+        carrier recorded in the packet takes precedence over
+        ``frequency_mhz``.
         """
         if len(packet) < 4:
             raise ValueError("Malformed data.")
         type_byte = packet[0x00]
         if kind is None:
-            kind = SignalKind.classify(type_byte)
+            kind = packet_kind(packet)
         return cls(
             bytes(packet),
             kind,

@@ -197,11 +197,18 @@ below are within the code itself, so add 4 for the payload above:
 
 |Offset|Contents|
 |------|--------|
-|0x00|0xb1 for a 433MHz capture|
+|0x00|Changes with the carrier: 0x64 at 305MHz, 0x78 at 315, 0x82 at 320, 0xa0 at 335, 0xb0 at 433.42, 0xb1 at 433.92, 0xba at 438|
 |0x01|0xc0 in every capture seen; not a repeat count (the device sends nothing if it is changed to 0)|
 |0x02-0x03|Length of the following data in little endian, counting the carrier field|
 |0x04-0x07|Carrier frequency in kHz, little endian (for example 433920)|
 |0x08 ....|Pulse lengths, encoded as above, paired as ON, OFF|
+
+Because the first byte follows the carrier, a code in this layout is
+recognized by byte 0x01 (0xc0) and a carrier between 300 and 950MHz at
+0x04-0x07, not by its first byte. Read from offset 0x04 like a code in the
+first layout, the carrier field turns into four extra pulse lengths and the
+first two real ones are lost. The seven first bytes above were seen on one
+RM4 Pro, firmware 52079, 2026-11-21.
 
 The device reads the carrier field when the code is sent back: the same
 code with 315000 there is not transmitted at 433.92MHz. A code built with

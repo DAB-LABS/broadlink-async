@@ -3,6 +3,23 @@
 All notable changes to this project are recorded here. The format follows
 Keep a Changelog; versions follow Semantic Versioning.
 
+## 1.4.1 - Unreleased
+
+### Fixed
+
+- RF codes an RM4 Pro captures away from 433.92 MHz are read correctly. The
+  device changes the first byte of a capture with the carrier (0x78 at 315
+  MHz, 0xB0 at 433.42 and so on), and only 0xB1 was recognized, so other
+  captures were read from the wrong offset: four made-up timings in front
+  and the first two real ones lost. Captures are now recognized by the rest
+  of their header, which also gives them their recorded carrier, the
+  mid-pulse realign and a kind without raising `ValueError`. Codes captured
+  at 433.92 MHz and sending a code back are unchanged.
+
+### Added
+
+- `is_rm4_rf_packet()` and `packet_kind()`.
+
 ## 1.4.0 - 2026-11-19
 
 ### Added
