@@ -210,6 +210,12 @@ first layout, the carrier field turns into four extra pulse lengths and the
 first two real ones are lost. The seven first bytes above were seen on one
 RM4 Pro, firmware 52079, 2026-11-21.
 
+A learned code sent back as it is goes out on its own carrier, whatever its
+first byte: on the same RM4 Pro, a code learned at 315MHz (0x78) and one
+learned at 433.42MHz (0xb0) were each received whole by a separate
+receiver on their carrier, and the 315MHz code with its first byte changed
+to 0xb1 went out the same (2026-11-22).
+
 The device reads the carrier field when the code is sent back: the same
 code with 315000 there is not transmitted at 433.92MHz. A code built with
 0xb2 and no carrier field, as described above, is also accepted and sent at
